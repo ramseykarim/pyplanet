@@ -1,0 +1,10 @@
+# Format:  token:  value
+# Currently tokens have to match exactly (but can be upper or lower)
+# Order doesn't matter.  Parameters not included take default value
+# Tokens are currently:  
+#     atmosphere:  
+#	gasfile, cloudfile, otherfile, tweakfile, 
+#	constituents, clouds, gastype, cloudtype, 
+#	othertype, regridtype, g_ref, r_ref, p_ref, i
+#	pmin, pmax
+

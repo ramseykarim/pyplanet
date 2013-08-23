@@ -1,0 +1,101 @@
+\documentclass[11pt]{article}
+%\usepackage{abbrevs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[pdftex]{graphicx}     % could insert ``draft'' between []
+\pagestyle{empty}
+
+\setlength{\oddsidemargin}{0pt} % there is 1 inch before the
+                                % side margin in ``article'' class
+\setlength{\textwidth}{6.5in}
+
+\setlength{\voffset}{0pt}
+%\setlength{\topmargin}{-36pt}     % there is 1 inch before the
+\setlength{\topmargin}{-0.75in}     % there is 1 inch before the
+                                % top margin in ``article'' class and
+                                % then room for header, etc.
+\setlength{\textheight}{10.0in}
+%%%%%%%%%%%
+
+\begin{document}
+{\centering{\bf pyPlanet:  The Manual} \\}
+\vspace*{0.5cm}
+
+\section{Introduction} 
+pyPlanet is a modular open-source planetary atmospheric radiative transfer code that is currently written for the outer planets.  
+
+\begin{itemize}
+\item ./ root directory 
+	\begin{itemize}
+	\item planet.py - executive module for the full pipeline
+	\item atmosphere.py - module to read/compute the atmospheric structure: can be run separately
+	\item alpha.py - module to compute the opacity at each layer:  must have an atmosphere
+	\item brightness.py - module to compute the radiometric brightness temperature:  must have an atmosphere and opacity
+	\end{itemize}
+\item constituents
+\end{itemize}
+
+\section{Recipes}
+This section provides some recipes to generate and analysze data.  Common to all of them are setting up and loading the class.  It assumes a file named \texttt{config.par} in the appropriate planet directory (e.g. Neptune).  It also assumes that the use.txt files under \texttt{constituents} are properly set.  See the help listings for details on the other parameters that are available.
+\begin{enumerate}
+\item Make sure the config.par file is correct
+\item Start \texttt{ipython --pylab}
+\item \texttt{import planet}
+\item \texttt{n = planet.planet('neptune')}
+\end{enumerate}
+
+Then it forks based on whether you want to make images or spectra at a set of locations.  The relevant function is n.run(...).  Arguments are:
+\begin{itemize}
+\item \texttt{freqs}:   list of frequencies to be used. For an image this should be just one.
+	\begin{itemize}
+	\item scalar - it is converted into a list of length 1
+	\item list of length 3 - it interprets it as start, stop, step and generates that list (so beware)
+        \item list of any other length - it is just that list of frequencies
+	\end{itemize}
+\item \texttt{b}:  "impact parameter" on the planet face.  [0,0] is center of the projected face.  It is scaled such that |b|=1 corresponds to the maximum radius of the projected face.
+	\begin{itemize}
+	\item float - this will generate a grid with the given spacing as set by the block.  It will extend $\pm 1.5$ to give some "empty space" around the planet.
+	\item list of length 2 - this will assume one given location on the face (e.g. \texttt{[-0.1,0.1]})
+	\item list of length other than 2 - this will assume that you want a line of those values along the equator
+	\item matrix of length 8 - why did I do this?
+	\item string (word 'disc') - disc averaged value
+	\item otherwise it assumes a list of locations (e.g. \texttt{[[-0.1,-0.1],[0.0,0.0],[0.1,0.1]]})
+	\end{itemize}
+\item \texttt{freqUnit}:  string specifying the unit, default to 'GHz' (and hopefully if not, it correctly propagates through...)
+\item \texttt{orientation}:  
+\item \texttt{block}:  Unfortunately, if more than about 6000 pixels are needed the code (as run on my computer) crashes due to memory issues.  So this allows the full grid to be done in blocks e.g. \texttt{b=0.01, block = [1,15]}.  Default is [1,1], so that it runs the full square grid, which generally works for b>0.05.
+\end{itemize}
+
+\subsection{Images}
+For images, b is set to a float and then the blocks are done if needed.  If b=0.01, then 15 blocks are generally needed.  Blocks 1-4 and 12-15 can be run while in the same session of ipython, however one must exit the program after those and after every single block in the middle.  It will write filenames specifying which block.
+
+When all blocks are completed, you will need to put them together and also likely fix some bad points (near the edge where some rays blow up - which should be fixable!).  For this restart \texttt{ipython --pylab} and \texttt{import img}.
+
+Type \texttt{imgClass = img.Img()} and then give it the list of files needed to make the full image (e.g. \texttt{1 2 3 4 5 6 7 8 9 10 11 12 13 14 15}). Note that \texttt{imgClass} is your variable name to use - I generally use \texttt{nc} for Neptune at C-band, etc.  It will put them together and plot the image.    
+
+\subsubsection{Fix}
+As mentioned above, there are typically bad values and \texttt{imgClass.fix} will fix them by setting them to the average of all of the surrounding points.
+Use \texttt{plot(imgClass.data)} to have it plot all columns and see where the jagged points are.  If they are all at large values (above any realistic value) it is simple to just type \texttt{imgClass.fix(v)}, where \texttt{v} is a threshhold value greater than any realistic value but less than any bad one.  Replot imgClass.data and they should be gone.  If there are bad points buried in there (i.e. with values less than the realistic max image value) then you need to track them down by pixel number and fix them.  Once a list of pixel values are known you pass them to fix as a paired list:  \texttt{imgClass.fix([[x1,x2,x3,...,xn],[y1,y2,y3,...,yn]])}, where n$\ge$1.
+
+You should then save the reconstituted image via \texttt{imgClass.saveImage(filename='desiredFilename')}.  You can then delete all of the individual block files to reduce clutter.
+
+\subsubsection{Analysis}
+You will then want to compare these images with observations (hopefully for which you've correctly set up for in \texttt{config.par}).  For this you will probably want another program called \texttt{jove}.  Move the image file you created above to the directory containing the FITS files of the observations and \texttt{jove}.
+
+After starting \texttt{ipython --pylab}, you can \texttt{import jove}, then \texttt{import img}.  Note that it must be done in this order since \texttt{jove} sets the path to find \texttt{img}.   You can read in the appropriate FITS by \texttt{joveClass=jove.Img(jove.ls[num])}, where again joveClass is your name (I typically use \texttt{n} for Neptune etc) and \texttt{num} is the number in the file listing that was shown when you created \texttt{joveClass}.
+
+You can then read in your image as before by \texttt{imgClass=img.Img()}.  If you know the number of the file, you can include it in the argument, as opposed to letting it query you.  Here I usually \texttt{imgClass} to be e.g. \texttt{c} for C-band etc.
+
+You then need to convolve it to the appropriate beam.
+\texttt{
+imgClass.generateKernel(joveClass.bw[0])
+imgClass.convolve()
+}
+
+\subsection{Spectra}
+
+
+\bibliographystyle{plainnat}
+\bibliography{/Users/ddeboer/Documents/Papers/mybibdesk}
+\end{document}
+
