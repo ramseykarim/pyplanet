@@ -115,7 +115,7 @@ class planet:
         self.Tb=[]
         hit_b=[]
         isImg = False
-        rNorm = None; tip = None; rotate = None
+        self.rNorm = None; self.tip = None; self.rotate = None
         if len(freqs)==1 and self.imRow:
             isImg = True
             imCol = len(b)/self.imRow
@@ -125,12 +125,12 @@ class planet:
         for i,bv in enumerate(b):
             print '%d of %d:  ' % (i,len(b)),
             Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,isImage=isImg,discAverage=self.discAverage)
-            if self.bright.path != None and rNorm == None:
-                rNorm = self.bright.path.rNorm
-            if self.bright.path != None and tip == None:
-                tip = self.bright.path.tip
-            if self.bright.path != None and rotate == None:
-                rotate = self.bright.path.rotate
+            if self.bright.path != None and self.rNorm == None:
+                self.rNorm = self.bright.path.rNorm
+            if self.bright.path != None and self.tip == None:
+                self.tip = self.bright.path.tip
+            if self.bright.path != None and self.rotate == None:
+                self.rotate = self.bright.path.rotate
             if Tbt == None:
                 Tbt = [0.0]
             else:
@@ -148,12 +148,12 @@ class planet:
         global header
         if isImg:
             if abs(block[1])>1:
-                btmp = 'B%02dof%02d'%(block[0],abs(block[1]))
+                btmp = '%02dof%02d'%(block[0],abs(block[1]))
             else:
                 btmp = ''
             datFile = 'Output/%s_Image%s_%d%02d%02d_%02d%02d.dat' % (self.planet,btmp,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
             print '\nWriting image data to ',datFile
-            self.__setHeader__(rNorm)
+            self.__setHeader__(self.rNorm)
             df = open(datFile,'w')
             for hdr in header:
                 df.write(header[hdr])
@@ -173,7 +173,7 @@ class planet:
                 df.write(header[hdr])
             s = 'GHz \tK@km'
             for bv in hit_b:
-                s+='(%.0f,%.0f)\t' % (rNorm*bv[0],rNorm*bv[1])
+                s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
@@ -184,20 +184,20 @@ class planet:
                 s+='\n'
                 df.write(s)
             df.close()
-    def __setHeader__(self,rNorm):
+    def __setHeader__(self,intercept):
         global header
-        if rNorm == None:  # didn't intercept the planet
+        if not intercept:  # didn't intercept the planet
             header['res'] = '# res not set\n'
             header['orientation'] = '# orientation not set\n'
             header['aspect'] = '# aspect tip, rotate not set\n'
             header['rNorm'] = '# rNorm not set\n'
         else:
-            resolution = (180.0/math.pi)*3600.0*math.atan(abs(b[1][0]-b[0][0])*rNorm/self.atm.distance)
+            resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.atm.distance)
             print 'resolution = ',resolution
             header['res'] = '# res:  %f arcsec\n' % (resolution)
             header['orientation'] = '# orientation:   %s\n' % (repr(self.atm.orientation))
-            header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*tip, (180.0/math.pi)*rotate)
-            header['rNorm'] = '# rNorm: %f\n' % rNorm
+            header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*self.tip, (180.0/math.pi)*self.rotate)
+            header['rNorm'] = '# rNorm: %f\n' % self.rNorm
         header['gtype'] = '# gtype: %s\n' % (self.atm.gtype)
         header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.atm.Req,self.atm.Rpol)
         header['distance'] = '# distance:  %f km\n' % (self.atm.distance)

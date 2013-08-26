@@ -4,11 +4,11 @@
 # Parameters not included take the hard-coded default value
 ### gas data
 gastype read
-gasfile neptune.paulCO_cloud21_fletcher_best_dry_50S 
+gasfile neptune.paulCO_cloud21_fletcher_best_wet_30S 
 constituents Z T P H2 HE CH4 NH3 H2O H2S SOLN OTHER PH3 CO CO13 HCN DZ
 ### cloud data
 cloudtype read
-cloudfile nepcloud_CO.cloud21_fletcher_best_dry_50S 
+cloudfile nepcloud_CO.cloud21_fletcher_best_wet_30S 
 clouds Z T P SOLN H2O NH4SH NH3 H2S CH4 AR PH3 DZ
 ### other data, tweak and regrid
 otherfile none

@@ -58,7 +58,7 @@ class brightness():
     def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, verbose=None, plot=None, isImage=False, discAverage=False, normW4plot=True):
         """This computes the brightness temperature along one ray path"""
 
-        print 'discAverage = ',discAverage
+        #print 'discAverage = ',discAverage
 
         if verbose == None:
             verbose = self.verbose
