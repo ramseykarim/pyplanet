@@ -38,7 +38,7 @@ class Img:
             sfile = raw_input('File numbers: ')
             if '-' in sfile:
                 sfile = sfile.split('-')
-                ifile = range(int(sfile[0]),int(sfile[1]))
+                ifile = range(int(sfile[0]),int(sfile[1])+1)
             else:
                 sfile = sfile.split()
                 ifile = []
@@ -125,11 +125,13 @@ class Img:
             self.header['band'] = utils.getRFband(self.freq,'GHz')
             self.headerText.append('# band: %s\n' % self.header['band'])
 
-    def fix(self, fixThreshhold=200.0, padValue='auto'):
+    def fix(self, fixThreshhold='auto', padValue='auto'):
         """Fix or reset points:
               padValue = float or 'auto'=nearest neighbor average
-              trimValue = float sets all points above trim to padValue
-              trimValue = list of pairs, sets those points to padValue"""
+              fixThreshhold = float sets all points above trim to padValue
+              fixThreshhold = list of pairs, sets those points to padValue
+              fixThreshhold = 'auto', set to 110% of non-zero average"""
+        print 'called with: ',fixThreshhold
         fixVal = 0
         if type(fixThreshhold) == list:
             if len(fixThreshhold) == 2:
@@ -137,8 +139,33 @@ class Img:
             else:
                 print 'Error in ',fixThreshhold
                 return None
+        elif fixThreshhold[0].lower() == 'v':
+            figname = fixThreshhold+str(padValue)
+            plt.figure(figname)
+            for i in range(len(self.data)):
+                plt.plot(self.data[i])
+            return 0
+        elif fixThreshhold[0].lower() == 'd':
+            print "Derivative fix..."
+            ft = self.fixDeriv(padValue)
+            self.fix(ft)
+            return '...done'
+        elif fixThreshhold == 'auto':
+            dataShape = np.shape(self.data)
+            nave = 0
+            ave = 0.0
+            for i in range(dataShape[0]):
+                for j in range(dataShape[1]):
+                    if self.data[i,j]>0.0:
+                        nave+=1
+                        ave+=self.data[i,j]
+            ave = ave/nave
+            fixThreshhold = 1.1*ave
+            print 'Non-zero average = %.2f, set fixThreshhold = %.2f' % (ave,fixThreshhold)
+            fixVal = np.where(self.data > fixThreshhold)
         else:
             fixVal = np.where(self.data > fixThreshhold)
+            
         if padValue == 'auto':
             offset = [[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1]]
             padValue = []
@@ -155,9 +182,47 @@ class Img:
 
         print 'Pad values'
         for i in range(len(fixVal[0])):
-            print str(padValue[i])+'  ',
+            print 'point %d, %d = %.2f' % (fixVal[0][i],fixVal[1][i],padValue[i])
             self.data[fixVal[0][i],fixVal[1][i]] = padValue[i]
         return len(fixVal[0])
+
+    def fixDeriv(self,threshhold=140.0):
+        """Fixes points based on derivative in planet disc"""
+        if threshhold == 'auto':
+            print 'You probably forgot to provide a value for fixDeriv in fix...'
+            return 0
+        numFix = 0
+        fixLoc = [[],[]]
+        plt.figure('fixDeriv')
+        for i in range(len(self.data)):
+            inDisc = False
+            for j in range(len(self.data[i])):
+                if self.data[i,j]>0.0 and not inDisc:
+                    inDisc = True
+                elif inDisc and self.data[i,j]<1E-6:
+                    inDisc = False
+                if not inDisc:
+                    continue
+                
+                derivForward = self.data[i,j+1] - self.data[i,j]
+                derivReverse = self.data[i,j] - self.data[i,j-1]
+                if abs(derivForward) > threshhold:
+                    print i,j,derivForward
+                    plt.plot(self.data[i])
+                    plt.plot(j,self.data[i,j],'o')
+                    numFix+=1
+                    fixLoc[0].append(i)
+                    fixLoc[1].append(j)
+                elif abs(derivReverse) > threshhold:
+                    print i,j,derivReverse
+                    plt.plot(self.data[i])
+                    plt.plot(j-1,self.data[i,j],'o')
+                    numFix+=1
+                    fixLoc[0].append(i)
+                    fixLoc[1].append(j)
+
+        print 'Number found:  %d' % (len(fixLoc[0]))
+        return fixLoc
 
     def outline(self,tip='auto',reference='ref'):
         """Finds approximate elliptical outline.  

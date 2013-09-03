@@ -77,6 +77,8 @@ Type \texttt{imgClass = img.Img()} and then give it the list of files needed to 
 As mentioned above, there are typically bad values and \texttt{imgClass.fix} will fix them by setting them to the average of all of the surrounding points.
 Use \texttt{plot(imgClass.data)} to have it plot all columns and see where the jagged points are.  If they are all at large values (above any realistic value) it is simple to just type \texttt{imgClass.fix(v)}, where \texttt{v} is a threshhold value greater than any realistic value but less than any bad one.  Replot imgClass.data and they should be gone.  If there are bad points buried in there (i.e. with values less than the realistic max image value) then you need to track them down by pixel number and fix them.  Once a list of pixel values are known you pass them to fix as a paired list:  \texttt{imgClass.fix([[x1,x2,x3,...,xn],[y1,y2,y3,...,yn]])}, where n$\ge$1.
 
+fixDeriv as well...
+
 You should then save the reconstituted image via \texttt{imgClass.saveImage(filename='desiredFilename')}.  You can then delete all of the individual block files to reduce clutter.
 
 \subsubsection{Analysis}

@@ -23,6 +23,8 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         Pmin/Pmax are optional - defaults are min/max in gas.
         Assumes that the gas range encompasses cloud range"""
 
+    print 'REGRID26:  Put in adiabatic interpolation'
+
     ### Determine regridType and parse string
     if regridType==None:
         regridType = atm.regridType

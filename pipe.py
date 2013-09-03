@@ -1,6 +1,12 @@
 import planet
 n = planet.planet('neptune')
-n.run(freqs=4.86,b=0.01,block=[12,15])
-n.run(freqs=4.86,b=0.01,block=[13,15])
-n.run(freqs=4.86,b=0.01,block=[14,15])
-n.run(freqs=4.86,b=0.01,block=[15,15])
+frq = 43.34 
+bstep = 0.01
+sizeofblock = 15
+#thisrun = [11]
+#thisrun = [1,2,3,4]
+thisrun = [12,13,14,15]
+
+for i in thisrun:
+    n.run(freqs=frq,b=bstep,block=[i,sizeofblock])
+
