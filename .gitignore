@@ -8,3 +8,6 @@
 *.aux
 *.gz
 *.pyc
+Documentation/coordinateSystems.docx
+*.log
+

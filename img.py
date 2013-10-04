@@ -444,9 +444,9 @@ class Img:
             print 'limb is incorrectly specified'
             return 0
         for i in range(len(bdata)):
-            if math.sqrt( bdata[i][0]**2 + bdata[i][1]**2 ) > 0.96:
-                continue  # this is off the disk (assumed circular...)
             edge, bmod = raypath.__findEdge__(atm,bdata[i],rNorm,tip,rotate,gtype,printdot=False)
+            if edge == None:
+                continue
             pclat = math.asin( np.dot(edge,raypath.yHat)/np.linalg.norm(edge) )
             delta_lng = math.atan2( np.dot(edge,raypath.xHat), np.dot(edge,raypath.zHat) )
             if pclat > 0.0:
@@ -456,17 +456,34 @@ class Img:
                 col = i - row*len(self.data)
                 pixel_modlist.append([row,col,i])
                 nedit+=1
+        breakb = 0.96
         if len(Tmod) > 1:
-            Tfunc = interpolate.interp1d(limb,Tmod,kind=3)
+            wherebb = np.where(np.array(limb) < breakb)
+            Tfunc3 = interpolate.interp1d(limb[wherebb[0][0]:wherebb[0][-1]+1],Tmod[wherebb[0][0]:wherebb[0][-1]+1],kind=3,bounds_error=False,fill_value=0.0)
+            Tfunc1 = interpolate.interp1d(limb,Tmod,kind=1)
         else:
-            Tfunc = lambda x: Tmod[0]
+            Tfunc3 = lambda x: Tmod[0]
+            Tfunc1 = lambda x: Tmod[0]
+        testPlotLimb = False
+        if testPlotLimb:
+            pltl = np.linspace(limb[0],limb[-1],50)
+            pltt = Tfunc3(pltl)
+            plt.figure('limbFunction')
+            plt.plot(pltl,pltt)
+            pltt = Tfunc1(pltl)
+            plt.plot(pltl,pltt)
+            plt.plot(limb,Tmod,'o')
+            math.sqrt(-1.)
         for px in pixel_modlist:
             bval = math.sqrt( bdata[px[2]][0]**2 + bdata[px[2]][1]**2 )
             if bval < limb[0]:
                 bval = limb[0]
             elif bval > limb[-1]:
                 bval = limb[-1]
-            Tnew = Tfunc(bval)
+            if bval < breakb:
+                Tnew = Tfunc3(bval)
+            else:
+                Tnew = Tfunc1(bval)
             self.data[px[0],px[1]] = Tnew
         return nedit
 

@@ -58,7 +58,10 @@ def __rotate2obs__(rotate,tip,b):
 
 def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=True):
     tmp = (b[0]**2 + b[1]**2)
-    zQ_Trial = np.arange(math.sqrt(1.0-tmp)*1.01,0.0,-0.005)
+    try:
+        zQ_Trial = np.arange(math.sqrt(1.0-tmp)*1.01,0.0,-0.005)
+    except ValueError:
+        return None, None
     pclat_zQ_Trial = []
     r_zQ_Trial = []
     r_pclat_zQ_Trial = []

@@ -167,23 +167,35 @@ class planet:
         else:
             datFile = 'Output/%s_%d%02d%02d_%02d%02d.dat' % (self.planet,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
             print '\nWriting data to ',datFile
+            matchFile = 'match.dat'
+            print '\nWriting data to ',matchFile
+            matchfp = open(matchFile,'w')
             self.__setHeader__(None)
             df = open(datFile,'w')
             for hdr in header:
                 df.write(header[hdr])
             s = 'GHz \tK@km'
+            sm = ''
             for bv in hit_b:
                 s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
+                sm+='%.3f, '% (math.sqrt(bv[0]**2. + bv[1]**2.))
             s+='\n'
+            sm+='\n'
             df.write(s)
+            matchfp.write(sm)
             for i,f in enumerate(freqs):
                 s = '%.9f\t' % (f)
+                sm = '%.5f:  ' % (f)
                 for j in range(len(b)):
                     s+='  %.2f\t  ' % (self.Tb[j][i])
+                    sm+='%.2f, ' % (self.TB[j][i])
                 print s
                 s+='\n'
+                sm+='\n'
                 df.write(s)
+                matchfp.write(sm)
             df.close()
+            matchfp.close()
     def __setHeader__(self,intercept):
         global header
         if not intercept:  # didn't intercept the planet
