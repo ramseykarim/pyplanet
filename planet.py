@@ -175,10 +175,13 @@ class planet:
             for hdr in header:
                 df.write(header[hdr])
             s = 'GHz \tK@km'
-            sm = ''
-            for bv in hit_b:
+            sm = 'b:  '
+            for i,bv in enumerate(hit_b):
                 s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
-                sm+='%.3f, '% (math.sqrt(bv[0]**2. + bv[1]**2.))
+                cma = ', '
+                if i==0:
+                    cma = ''
+                sm+='%s%.3f'% (cma,math.sqrt(bv[0]**2. + bv[1]**2.))
             s+='\n'
             sm+='\n'
             df.write(s)
@@ -188,7 +191,10 @@ class planet:
                 sm = '%.5f:  ' % (f)
                 for j in range(len(b)):
                     s+='  %.2f\t  ' % (self.Tb[j][i])
-                    sm+='%.2f, ' % (self.TB[j][i])
+                    cma = ', '
+                    if j==0:
+                        cma=''
+                    sm+='%s%.2f' % (cma,self.Tb[j][i])
                 print s
                 s+='\n'
                 sm+='\n'
