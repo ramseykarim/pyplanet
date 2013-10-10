@@ -149,6 +149,7 @@ class brightness():
             self.P = atm.gas[atm.C['P']][0:len(self.W[0])]
             #self.z = atm.gas[atm.C['Z']][0:len(self.W[0])]
             plt.figure('radtran')
+            plt.subplot(121)
             for i,f in enumerate(freqs):
                 #label=r'$\tau$: %.1f GHz' % (f)
                 #plt.semilogy(self.tau[i],self.P,label=label)
@@ -157,15 +158,17 @@ class brightness():
                 else:
                     wplot = self.W[i]
                 label=r'$W$: %.1f GHz' % (f)
+                label=r'%.1f cm' % (30.0/f)
                 plt.semilogy(wplot,self.P,label=label)
                 #label=r'Tlyr$_b$: %.1f GHz' % (f)
                 #plt.semilogy(self.Tb_lyr[i],self.P,label=label)
+            plt.legend()
             v = list(plt.axis())
             v[2] = 100.0*math.ceil(self.P[-1]/100.0)
             v[3] = 1.0E-7*math.ceil(self.P[0]/1E-7)
             plt.axis(v)
             #plt.legend()
-            plt.xlabel('units')
+            #plt.xlabel('units')
             plt.ylabel('P [bars]')
             plt.figure('brightness')
             lt = '-'

@@ -10,7 +10,7 @@ def modify(gas,cloud,C,Cl):
         Tlyr = gas[C['T']][i]
         
         ### Process H2S
-        depleteh2s = False 
+        depleteh2s =  True
         option='A'  #the NH4SH "normal" option
         constAmth2s = 4e-9
         if depleteh2s:
@@ -38,10 +38,10 @@ def modify(gas,cloud,C,Cl):
                     gas[C['NH3']][i]*=0.001
 
         ### Process NH3 
-        enhancenh3 = False
-        constAmtnh3 = 6e-9
-        if Tlyr > 400.0:
-            gas[C['NH3']][i] = 1.94E-4
+        enhancenh3 = True
+        constAmtnh3 = 12e-9
+        #if Tlyr > 400.0:
+        #    gas[C['NH3']][i] = 1.94E-4
         if depleteh2s and option=='B' and Plyr < 200.0:
             comment+='\nNH3 was modified above under H2S'
         if enhancenh3:
