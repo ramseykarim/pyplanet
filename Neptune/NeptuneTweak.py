@@ -38,8 +38,9 @@ def modify(gas,cloud,C,Cl):
                     gas[C['NH3']][i]*=0.001
 
         ### Process NH3 
-        enhancenh3 = True
+        enhancenh3 = False #True
         constAmtnh3 = 12e-9
+        enhancenh3_ver140113 = False
         #if Tlyr > 400.0:
         #    gas[C['NH3']][i] = 1.94E-4
         if depleteh2s and option=='B' and Plyr < 200.0:
@@ -62,6 +63,10 @@ def modify(gas,cloud,C,Cl):
                 comment+='\nEnhance NH3 to '+str(constAmtnh3)
                 #print 'Enhance NH3 to ',constAmtnh3
                 gas[C['NH3']][i] = constAmtnh3
+        if enhancenh3_ver140113:
+            if gas[C['NH3']][i] < constAmtnh3:
+                gas[C['NH3']][i] = constAmtnh3
+                print 'enhancenh3_ver140113',constAmtnh3
 
         ### Process CO
         if gas[C['P']][i] > 0.1585:

@@ -30,7 +30,7 @@ CNeptune = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOL
            'PH3':11,'CO':12,'CO13':13,'HCN':14,'DZ':15}
 
 ###This 'Cl'oud dictionary has the cloud parameters.  Needs to correspond to datafile if not computing.
-ClJupiter = {}
+ClJupiter = {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
 ClSaturn = {}
 ClUranus = {}
 ClNeptune = {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
