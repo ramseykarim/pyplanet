@@ -51,6 +51,7 @@ class Img:
             ifile = [0]
 
         # read files
+        print '====> update to use filereader (readTB) in utils...but need to fix TB vs img Units line issue (first line after header or not)'
         data = []
         imRow = imCol = 0
         for i in ifile:

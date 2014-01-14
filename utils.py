@@ -73,63 +73,19 @@ def bang():
     for f in files:
         plotTB(f,xaxis='wavel',xlog=True,justFreq=True)
 
-def plotTB(fileDesig=None,xaxis='Frequency',xlog=False, justFreq=False, directory='Output',distance=4377233696.68):
+def plotTB(fn=None,xaxis='Frequency',xlog=False, justFreq=False, directory='Output',distance=4377233696.68):
+    """plots brightness temperature against frequency and disc location:
+           fn = filename to read (but then ignores directory) | '?', '.' or None | integer [None]
+           xaxis = 'f[requency]' | 'w[avelength' ['freq']
+           xlog = True | False [False]
+           justFreq = True | False [False]
+           directory = subdirectory for data (not used if filename given) ['Output']
+           distance = distance for angular size plot in km [4377233696 km for Neptune]"""
 
-    filename = fileDesig
-    if fileDesig=='?' or fileDesig=='.' or fileDesig==None:
-        files = ls(directory=directory, show=True, returnList=True)
-        i = input('File number:  ')
-        filename = files[i]
-    elif type(fileDesig) == int:
-        files = ls(directory=directory, show=False, returnList=True)
-        filename = files[fileDesig]
-    print '\nOpening '+filename
-    
-    try:
-        fp = open(filename,'r')
-    except IOError:
-        print filename+' not found'
-        return 0
-
-    ## Get past any header and get first line
-    bvals = []
-    line = '#'
-    while line[0]=='#':
-        line = fp.readline()
-    labels = line.split()
-    xlabel = labels[0]
-    del(labels[0])
-    print 'b = ',
-    for b in labels:
-        print ' '+b,
-        bb = b.split('(')[1].strip(')').split(',')
-        bb = [float(bb[0]),float(bb[1])]
-        bvals.append(bb)
-    b = np.array(bvals)
-    print ''
-
-    ## Rest of data
-    print '>>>>>>>>>>>>>>>>wavelength assumes cm/GHz for now<<<<<<<<<<<<<<<<'
-    f = []
-    Tb = []
-    n = 0
-    wavel = []
-    global funit
-    for line in fp:
-        data = line.split()
-        f.append(float(data[0]))
-        wavel.append((speedOfLight/1E7)/float(data[0]))
-        del(data[0])
-        t = []
-        for d in data:
-            t.append(float(d))
-        Tb.append(t)
-        n+=1
-    Tb = np.array(Tb).transpose()
-    print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
+    filename,Tb,f,wavel,b,xlabel,ylabels = readTB(fn=fn,directory=directory)
+    title = filename.split('/')
 
     ## Frequency plot
-    title = filename.split('/')
     plt.figure('TB')
     for i in range(len(b)):
         if xaxis[0].lower() == 'f':
@@ -138,9 +94,9 @@ def plotTB(fileDesig=None,xaxis='Frequency',xlog=False, justFreq=False, director
             plotx = wavel
             xlabel='Wavelength [cm]'
         if xlog:
-            plt.semilogx(plotx,Tb[i],label=labels[i])
+            plt.semilogx(plotx,Tb[i],label=ylabels[i])
         else:
-            plt.plot(plotx,Tb[i],label=labels[i])
+            plt.plot(plotx,Tb[i],label=ylabels[i])
         #plt.plot(f,Tb[i],'x')
     #plt.legend()
     plt.xlabel(xlabel)
@@ -175,16 +131,43 @@ def plotTB(fileDesig=None,xaxis='Frequency',xlog=False, justFreq=False, director
 
     return len(b)
 
-def writeWavel(fileDesig=None,outputFile=None,directory='Output'):
+def writeWavel(fn=None,outputFile=None,directory='Output'):
 
-    filename = fileDesig
-    if fileDesig=='?' or fileDesig=='.' or fileDesig==None:
+    filename,Tb,f,wavel,b,xlabel,ylabels = readTB(fn=fn,directory=directory)
+    title = filename.split('/')[-1].split('.')[0]
+
+
+    ## Write file
+    title+='_wavel.dat'
+    if outputFile == None:
+        outputFile = title
+    print 'Writing to '+outputFile
+    fp=open(outputFile,'w')
+    for i in range(len(wavel)):
+        s = '%f\t' % (wavel[i])
+        fp.write(s)
+        for j in range(len(b)):
+            s = '%f\t' % (Tb[j][i])
+            fp.write(s)
+        fp.write('\n')
+    fp.close()
+            
+    return n
+
+def readTB(fn=None,directory='Output'):
+    """reads brightness temperature file:
+           fn = filename to read (but then ignores directory) | '?', '.' or None | integer [None]
+           directory = subdirectory for data (not used if filename given) ['Output']
+           """
+    print '==>I should make TB files a class...'
+    filename = fn
+    if fn=='?' or fn=='.' or fn==None:
         files = ls(directory=directory, show=True, returnList=True)
         i = input('File number:  ')
         filename = files[i]
-    elif type(fileDesig) == int:
+    elif type(fn) == int:
         files = ls(directory=directory, show=False, returnList=True)
-        filename = files[fileDesig]
+        filename = files[fn]
     print '\nOpening '+filename
     
     try:
@@ -193,13 +176,18 @@ def writeWavel(fileDesig=None,outputFile=None,directory='Output'):
         print filename+' not found'
         return 0
 
-    title = filename.split('/')[-1].split('.')[0]
-
     ## Get past any header and get first line
-    bvals = []
-    line = '#'
+    headerText = []
+    line ='# file:  '+filename+'\n'
     while line[0]=='#':
+        headerText.append(line)
         line = fp.readline()
+    print '=============Header (note update to use img.parseHeader)============'
+    for hdr in headerText:
+        print hdr,
+    print '\n\n'
+        
+    bvals = []
     labels = line.split()
     xlabel = labels[0]
     del(labels[0])
@@ -211,6 +199,7 @@ def writeWavel(fileDesig=None,outputFile=None,directory='Output'):
         bvals.append(bb)
     b = np.array(bvals)
     print ''
+    ylabels = labels
 
     ## Rest of data
     print '>>>>>>>>>>>>>>>>wavelength assumes cm/GHz for now<<<<<<<<<<<<<<<<'
@@ -232,20 +221,4 @@ def writeWavel(fileDesig=None,outputFile=None,directory='Output'):
     Tb = np.array(Tb).transpose()
     print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
 
-    ## Write file
-    title+='_wavel.dat'
-    if outputFile == None:
-        outputFile = title
-    print 'Writing to '+outputFile
-    fp=open(outputFile,'w')
-    for i in range(len(wavel)):
-        s = '%f\t' % (wavel[i])
-        fp.write(s)
-        for j in range(len(b)):
-            s = '%f\t' % (Tb[j][i])
-            fp.write(s)
-        fp.write('\n')
-    fp.close()
-            
-    return n
-
+    return filename,Tb,f,wavel,b,xlabel,ylabels
