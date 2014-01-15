@@ -132,10 +132,8 @@ def plotTB(fn=None,xaxis='Frequency',xlog=False, justFreq=False, directory='Outp
     return len(b)
 
 def writeWavel(fn=None,outputFile=None,directory='Output'):
-
     filename,Tb,f,wavel,b,xlabel,ylabels = readTB(fn=fn,directory=directory)
     title = filename.split('/')[-1].split('.')[0]
-
 
     ## Write file
     title+='_wavel.dat'
@@ -153,6 +151,29 @@ def writeWavel(fn=None,outputFile=None,directory='Output'):
     fp.close()
             
     return n
+
+def concatdat(files,directory='Output'):
+    aTB = []
+    bf = []
+    cwavel = []
+    for fil in files:
+        data = readTB(fn=fil)
+        a = list(data[1][0])
+        b = list(data[2])
+        c = list(data[3])
+        aTB+=a
+        bf+=b
+        cwavel+=c
+    sa = np.argsort(np.array(bf))
+    TB = []
+    f = []
+    wavel = []
+    for i in sa:
+        TB.append(aTB[i])
+        f.append(bf[i])
+        wavel.append(cwavel[i])
+    
+    return TB,f,wavel
 
 def readTB(fn=None,directory='Output'):
     """reads brightness temperature file:
@@ -219,6 +240,8 @@ def readTB(fn=None,directory='Output'):
         Tb.append(t)
         n+=1
     Tb = np.array(Tb).transpose()
+    f = np.array(f)
+    wavel = np.array(wavel)
     print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
 
     return filename,Tb,f,wavel,b,xlabel,ylabels
