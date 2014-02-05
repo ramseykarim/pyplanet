@@ -17,15 +17,22 @@ header = {'freqs':'', 'b':'', 'res':'', 'gtype':'', 'orientation':'', 'aspect':'
 class planet:
     def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbose=False, plot=True):
         """This is the 'executive function class to compute overall planetary emission
+           Arguments here set defaults, however often get set specifically in run.
            Inputs:
-               planet:  'Jupiter', 'Saturn', 'Uranus', 'Neptune'
+               name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune'
                freqs: options are:
                   a value:  does that one frequency
                   a triple:  assumes it is [start,stop,step]
                   a list: does those frequencies - don't use a length 3 list (see above)
+                b :  'impact parameter' b=1 is the radius of the maximum projected disc
+                  a list of length 2 is one position [0,0] is the center
+                  a float will generate a grid at that spacing, may need to set blocks during run
+                  a list of length > 2, assumes a line of those locations along the equator
+                  'disc' for disc-averaged
+                  a list of double-lists, evaluate at those locations
                freqUnit: unit for above
                config:  config file name [config.par], 'manual' [equivalent none]
-               log:  either a file name, a 'no', or 'auto' (for auto filename)
+               log:  log data from run, either a file name, a 'no', or 'auto' (for auto filename)
                verbose:  True/False
                plot:  True/False"""
 
@@ -48,7 +55,7 @@ class planet:
         self.log=utils.setupLogFile(self.logFile,path='Logs/')
         utils.log(self.log,self.planet+' start '+str(runStart),True)
 
-        ### Some convenience values
+        ### Some convenience values for the specific Neptune observations
         self.fvla = [4.86,8.46,14.94,22.46,43.34]
         anglecap = 13.24
         bvalcap = [0.5,0.6,0.7,0.8,0.9,0.925,0.95]
