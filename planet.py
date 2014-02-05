@@ -17,19 +17,22 @@ header = {'freqs':'', 'b':'', 'res':'', 'gtype':'', 'orientation':'', 'aspect':'
 class planet:
     def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbose=False, plot=True):
         """This is the 'executive function class to compute overall planetary emission
-           Arguments here set defaults, however often get set specifically in run.
+           Arguments here set defaults, however often get set specifically in run. See pyPlanet.pdf for documentation.
            Inputs:
-               name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune'
-               freqs: options are:
-                  a value:  does that one frequency
-                  a triple:  assumes it is [start,stop,step]
-                  a list: does those frequencies - don't use a length 3 list (see above)
+                name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune'
+                freqs: options are:
+                    - int/float:  does that one frequency
+                    - list of length 3:  assumes it is [start,stop,step]
+                    - list not of length 3:   does those frequencies
                 b :  'impact parameter' b=1 is the radius of the maximum projected disc
-                  a list of length 2 is one position [0,0] is the center
-                  a float will generate a grid at that spacing, may need to set blocks during run
-                  a list of length > 2, assumes a line of those locations along the equator
-                  'disc' for disc-averaged
-                  a list of double-lists, evaluate at those locations
+                    - doublet list is one position, [0,0] is the center
+                    - float will generate a grid at that spacing, may need to set blocks during run
+                    - list of length > 2, assumes a line of those locations along the equator
+                    - any string (typically 'disc') for disc-averaged
+                    - list of doublet lists, evaluate at those locations
+                    - any list of length greater than 8.  It should be a list of doublet lists.
+                      This assumes a length of perfect squares (9, 16, 25, 36) and interprets that as
+                      a sub-image at those locations (b-doublets).  Should do more checking on this...
                freqUnit: unit for above
                config:  config file name [config.par], 'manual' [equivalent none]
                log:  log data from run, either a file name, a 'no', or 'auto' (for auto filename)
@@ -123,7 +126,7 @@ class planet:
         hit_b=[]
         isImg = False
         self.rNorm = None; self.tip = None; self.rotate = None
-        if len(freqs)==1 and self.imRow:
+        if len(freqs)==1 and self.imRow:  ##We now treat it as an image at one frequency
             isImg = True
             imCol = len(b)/self.imRow
             print 'imgSize = %d x %d' % (self.imRow, imCol)
@@ -232,10 +235,14 @@ class planet:
         return b
     def __bRequest__(self,b,block):
         self.discAverage = False
+        printOutb = False
+        try:
+            if block[1] < 0:
+                printOutb = True
         global header
         header['b'] ='# b request:  '+str(b)+'  '+str(block)+'\n'
         self.imRow = None
-        if type(b) == float:  ## this generates a grid at that spacing
+        if type(b) == float:  ## this generates a grid at that spacing and blocking
             pb = []
             grid = -1.0*np.flipud(np.arange(b,1.5+b,b))
             grid = np.concatenate( (grid,np.arange(0.0,1.5+b,b)) )
@@ -255,19 +262,19 @@ class planet:
             b = [[0.0,0.0]]
             self.discAverage = True
             print 'Setting to disc-average'
-        elif len(np.shape(b)) == 1:   ## this makes a line along the equator
+        elif len(np.shape(b)) == 1:     ## this makes:
             pb = []
             if len(b) == 2:
-                pb.append(b)
+                pb.append(b)            ##...data at one location
             else:
                 for v in b:
-                    pb.append([v,0.0])
+                    pb.append([v,0.0])  ##...a line along the equator
             b = pb
         else:
             if len(b) > 8:  ## I don't remember...
                 self.imRow = int(math.sqrt(len(b)))
         self.b = b
-        if block[1]<0:
+        if printOutb:
             print '---------------------------------------------------------'
             print b
             print '---------------------------------------------------------'
