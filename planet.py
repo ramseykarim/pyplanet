@@ -239,6 +239,9 @@ class planet:
         try:
             if block[1] < 0:
                 printOutb = True
+        except:
+            print 'Error in __bRequest__ at line 242'
+            printOutb = False
         global header
         header['b'] ='# b request:  '+str(b)+'  '+str(block)+'\n'
         self.imRow = None
