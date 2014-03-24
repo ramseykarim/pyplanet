@@ -1,6 +1,6 @@
 def modify(gas,cloud,C,Cl):
 
-    comment = "'Jupiter tweaking"
+    comment = "Jupiter tweaking"
     
     sol = 0.0
     zSol = 0.0

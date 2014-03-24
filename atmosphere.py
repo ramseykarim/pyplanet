@@ -23,7 +23,8 @@ planetDictionary = {'Jupiter':0,'Saturn':1,'Uranus':2,'Neptune':3}
 
 ##########Use all upper case to help getVal##########
 ###This 'C'onstituent dictionary has atm layer gas data.   Needs to correspond to datafile if not computing.
-CJupiter = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10, 'DZ':11}
+CJupiter = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
+            'PH3':11,'CO':12, 'CO13':13,'HCN':14,'DZ':15}
 CSaturn = {}
 CUranus = {}
 CNeptune = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
@@ -101,6 +102,7 @@ class atmosphere:
             self.h2state = 'e'
             self.pmin = None
             self.pmax = None
+            self.distance = 5.2*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit]
             self.p_ref = 1.0           # bars
             self.Req = 71492.0         # in km
             self.Rpol = 66854.0
@@ -224,8 +226,18 @@ class atmosphere:
             self.plotProp()
         return self.nAtm
 
+    def configTokLists(self):
+        self.ctl = ['gasfile','cloudfile','otherfile','constituents','clouds','gastype','cloudtype','othertype','tweakfile','regridtype','pmin','pmax',
+                    'omega','jn','gm','req','rpol','distance','rj','p_ref','zonal','gtype','orientation','h2state','doppler']
+        print 'These get read in at atmosphere.py:'
+        print self.ctl
+        self.atl = ['h2state','h2newset','water','ice','nh4sh','nh3ice','h2sice','doppler']
+        print 'These get read in at alpha.py'
+        print self.atl
+
     def setConfig(self,configFile):
         """Reads in config files and updates after default set in __init__.  These are all shown in showConfig"""
+        print 'CONFIG SHOULD PROBABLY BE A CLASS'
         if configFile == None:
             print 'Atmosphere:  using default config'
             return 0

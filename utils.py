@@ -153,6 +153,7 @@ def writeWavel(fn=None,outputFile=None,directory='Output'):
     return n
 
 def concatdat(files,directory='Output'):
+    """Given a list of utils.ls indices, returns TB, freq, wavel"""
     aTB = []
     bf = []
     cwavel = []
@@ -203,7 +204,7 @@ def readTB(fn=None,directory='Output'):
     while line[0]=='#':
         headerText.append(line)
         line = fp.readline()
-    print '=============Header (note update to use img.parseHeader)============'
+    print '=============Header (need to update to use img.parseHeader)============'
     for hdr in headerText:
         print hdr,
     print '\n\n'
@@ -245,3 +246,26 @@ def readTB(fn=None,directory='Output'):
     print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
 
     return filename,Tb,f,wavel,b,xlabel,ylabels
+
+def plotObs(fn,cols=[0,1,2], color='b',marker='o',delimiter=None,comline='!'):
+    try:
+        fp=open(fn,'r')
+    except IOError:
+        print fn+' not found'
+        return 0
+    data = []
+    for line in fp:
+        if comline in line[0:5]:
+            continue
+        dline = line.split(delimiter)
+        if len(dline)<max(cols):
+            continue
+        drow = []
+        for c in cols:
+            drow.append(float(dline[c]))
+        data.append(drow)
+    data = np.array(data)
+    plt.semilogx(data[:,0],data[:,1],color=color,marker=marker)
+    plt.errorbar(data[:,0],data[:,1],yerr=data[:,2],color=color,marker=marker,ls='none')
+    
+        
