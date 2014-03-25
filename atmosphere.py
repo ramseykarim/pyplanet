@@ -460,6 +460,11 @@ class atmosphere:
         for i, mv in enumerate(self.layerProperty[self.config.LP['GM']]):
             gm = self.config.GM_ref - (mv-GMnorm)
             self.layerProperty[self.config.LP['GM']][i] = gm
+            little_g = gm/self.layerProperty[self.config.LP['R']][i]**2
+            m_bar = self.layerProperty[self.config.LP['AMU']][i]
+            T = self.gas[self.config.C['T']][i]
+            self.layerProperty[self.config.LP['H']].append( (properties.R*T)/(little_g*m_bar)/1000.0 )
+
         self.layerProperty = np.array(self.layerProperty)
             
     def computeCloud(self,verbose=False):
