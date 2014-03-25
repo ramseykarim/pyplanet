@@ -25,6 +25,16 @@ REFR_H2S=       2247.0      #n = (R/1E6) + 1)
 REFR_CH4=       413.0       #
 REFR_PH3=       0.0         #
 REFR_NH3=       2700.0      #(Spilker--VERY average since near resonances)
+# atomic mass units [g/mol]
+amu = {'unit':1.66056E-24,'H2':2.016,'He':4.003,'H2S':34.076,'NH3':17.030,'H2O':18.015,'CH4':16.04,'PH3':33.997,'NH4SH':51.110}
+# solar abundances (taken from dePater/Lissauer p 80)
+solar_abundance = {'H2':0.835,'He':0.195,'H20':1.70E-3,'CH4':7.94E-4,'NH3':2.24E-4,'H2S':3.70E-5,'PH3':7.50E-7}
+# triple points [K]
+triple_point = {'H2':187.61,'NH3':195.5,'H2S':187.61, 'CH4':90.7, 'PH3':0.0, 'H2O':273.16}
+# refractivity coefficients (Rc) R = Rc*P*(293/T) then n = (R/1E6) + 1. Average values of microwave
+refractivity = {'H2':124.43,'He':35.832,'H2S':2247.0,'NH3':2700.0,'CH4':413.0,'PH3':0.0}
+# specific heat at constant pressure over R.  High-T limit for H2
+specific_heat = {'H2':3.5,'He':2.50, 'H2O':4.00, 'NH3':4.46, 'H2S':4.01, 'CH4':4.50}
 def REFR_H2O(T):
     return ( 245.0 + 1.28E6/(T) ) #Janssen p218--or is the h2o cloud really almost an ocean,see liquid water p298 UFM*/
 def NH3_over_NH3_ice(T):    #Briggs and Sackett
