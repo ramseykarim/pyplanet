@@ -49,7 +49,7 @@ class planetConfig:
         self.ch4_p = 0.0
         self.Doppler = False
 
-        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6}
+        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6,'H':7,'LAPSE':8}
         # Set defaults
         if planet=='Neptune':
             self.gasFile = 'neptune.paulCO_cloud21_fletcher_best_dry'

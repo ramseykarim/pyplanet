@@ -11,7 +11,31 @@ import os.path
 import atmosphere as atm
 
 def regrid(atm,regridType=None,Pmin=None,Pmax=None):
-    """This puts atm and cloud on the same grid used later for calculations
+    """This puts atm and cloud on the same grid used later for calculations.  It has three different regimes:
+        1 - interpolating within given points:  P,T,z are assumed to follow given adiabat and constituents are linearly interpolated
+        2 - extrapolating outward:  project last slope out
+        3 - interpolating inward:  uses a dry adiabat
+       It has two types:
+        1 - use grid points in file
+            format: 'f name unit'
+                where
+                    'f' denotes a file
+                    'unit' is the unit in the file (bars, km)
+                    'name' is the name of the file
+        2 - provide step/range information, in one of two ways
+            a - format:  'p/z step unit'
+                    where
+                        'p/z' states whether defined in pressure or altitude from reference pressure
+                        'step' step to take
+                        'unit' unit used (bars, km)
+            b - format:  'p/z number'
+                    where
+                        'p/z states whether defined in pressure or altitude from reference pressure
+                        'number' numbers of steps within range
+       Pmin/Pmax are optional for type 2 - defaults are min/max in gas
+
+
+            
         regridType is a 2,3 or 4 element string with the following regridding options:
              1:  variable to regrid on ('P' or 'z')
              2:  log or linear regridding ('log' or 'lin') OR filename containing points
@@ -27,25 +51,81 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
 
     ### Determine regridType and parse string
     if regridType==None:
-        regridType = atm.regridType
+        regridType = atm.config.regridType
     if string.lower(regridType) == 'none' or regridType == None:
         print 'No regridding.  Note that there is a risk that not everything is on the same grid...\n'
         return 0
     if string.lower(regridType) == 'auto' or string.lower(regridType) == 'default':
-        regridType = 'z lin 1 km'
+        regridType = 'z 1 km'
     regrid = regridType.split()
-    xvar = string.upper(regrid[0])
+    regrid_using = string.upper(regrid[0])
+    try:
+        regrid_unit = string.upper(regrid[2])
+    except IndexError:
+        regrid_unit = '-'
     print '---regrid:  '+regridType
+    if regrid_using == 'F':
+        filename = os.path.join(atm.config.path,regrid[1])
+        try:
+            reg = open(filename,'r')
+        except IOError:
+            print "file '"+filename+"' not found - no regrid"
+            return 0
+        print '...interpolating on '+regrid_using+' from file '+filename
+        xs = []
+        for line in reg:
+            xs.append(float(line))
+        reg.close()
+        if regid_unit == 'km':
+            regrid_using = 'Z_file'
+            zgrid = xs
+            Pgrid = []
+        else:
+            regrid_using = 'P_file'
+            Pgrid = xs
+            zgrid = []
+    elif regrid_using == 'P':
+        if Pmin==None:
+            Pmin = min(atm.gas[atm.config.C['P']])
+        if Pmax==None:
+            Pmax = max(atm.gas[atm.config.C['P']])
+        if len(regrid)==2:
+            regrid_numsteps = int(regrid[1])
+            regrid_stepsize = (Pmax - Pmin)/regrid_numsteps
+        else:
+            regrid_stepsize = float(regrid[1])
+            regrid_numsteps = int( (Pmax-Pmin)/regrid_stepsize) + 1
+        regrid_using = 'P_compute'
+        zgrid = []
+        Pgrid = []
+        for i in range(regrid_numsteps):
+            Pgrid.append(Pmin + i*regrid_stepsize)
+        Pgrid = np.array(Pgrid)
+    elif regrid_using == 'Z':
+        zmin = None
+        zmax = None
+        if Pmin==None:
+            zmin = min(atm.gas[atm.config.C['Z']])
+        if Pmax==None:
+            zmax = max(atm.gas[atm.config.C['Z']])
+        if len(regrid)==2:
+            regrid_numsteps = int(regrid[1])
+            regrid_stepsize = None
+            if zmin and zmax:
+                regrid_stepsize = (zmax-zmin)/regrid_numsteps
+        else:
+            regrid_stepsize = float(regrid[1])
+            regrid_numsteps = None
+            if zmin and zmax:
+                regrid_numsteps = int( (zmax-zmin)/regrid_stepsize) + 1
+        regrid_using = 'Z_compute'
+        Pgrid = []
+        zgrid = []
+        if regrid_stepsize and regrid_numsteps:
+            for i in range(regrid_numsteps):
+                zgrid.append(zmin + i*regrid_stepsize)
+            zgrid = np.array(zgrid)
 
-    ### Set Pmin/Pmax if needed
-    if Pmin==None:
-        Pmin = min(atm.gas[atm.config.C['P']])
-    if Pmax==None:
-        Pmax = max(atm.gas[atm.config.C['P']])
-    zmin = np.interp(Pmax,atm.gas[atm.config.C['P']],atm.gas[atm.config.C['Z']])
-    zmax = np.interp(Pmin,atm.gas[atm.config.C['P']],atm.gas[atm.config.C['Z']])
-    print "Regrid pressure limits:  ",Pmin,Pmax
-    print "...corresponding z limits:  ",zmin,zmax
         
     if xvar == 'Z':### flip the array so that z is increasing so that interp works
         atm.gas = np.fliplr(atm.gas)

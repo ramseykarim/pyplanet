@@ -447,7 +447,7 @@ class atmosphere:
                       + (1.0e11)*properties.GravConst*(4.0*math.pi*amutmp*P*abs(zv-self.gas[self.config.C['Z']][i-1])*rr**2) \
                       / (properties.R*T)                  # in km3/s2
                 self.layerProperty[self.config.LP['GM']].append( Gdm )
-            ###set R
+            ###set Refr/n
             refrtmp = properties.REFR_H2*self.gas[self.config.C['H2']][i]      + properties.REFR_He*self.gas[self.config.C['HE']][i]   + \
                       properties.REFR_H2S*self.gas[self.config.C['H2S']][i]    + properties.REFR_NH3*self.gas[self.config.C['NH3']][i] + \
                       properties.REFR_H2O(T)*self.gas[self.config.C['H2O']][i] + properties.REFR_CH4*self.gas[self.config.C['CH4']][i] + \
