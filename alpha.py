@@ -8,6 +8,7 @@ import os.path
 import sys
 import numpy as np
 import utils
+import config as pcfg
 
 class alpha:
     def __init__(self,path='/Users/daviddeboer1/Documents/Projects/Planets/pyPlanet/',config=None,log=None,verbose=False,plot=False):
@@ -55,63 +56,21 @@ class alpha:
         for k in self.constituent:
             utils.log(self.log,'\t'+k+':  '+self.constituent[k],True)
 
-        # Set defaults
+        # get config
+        if type(config) == str:
+            config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
+        self.config = config
+
+        # copy config back into otherPar
         self.otherPar = {}
-        self.otherPar['h2state']='e'
-        self.otherPar['h2newset']= True
-        self.otherPar['water'] = 0.0
-        self.otherPar['ice'] = 0.0
-        self.otherPar['nh4sh'] = 0.0
-        self.otherPar['nh3ice'] = 0.0
-        self.otherPar['h2sice'] = 0.0
-        
-        # Read in config file
-        if config!=None:
-            config = os.path.join(path,config)
-        self.readConfig(config)
-            
-    def readConfig(self,configFile):
-        nTokMod = 0
-        if configFile == None:
-            print 'Alpha:  using config defaults'
-            return 0
-        try:
-            fp = open(configFile,'r')
-            print 'Reading from '+configFile
-        except IOError:
-            print configFile+' not found.  Using defaults.'
-            return 0
-        for line in fp:
-            if line[0] in utils.commentChars or len(line)<4:
-                continue
-            data = line.split()
-            tok = data[0].lower()
-            del(data[0])
-            if data[0].lower() == 'none':
-                data[0] = None
-            if tok == 'h2state':
-                self.h2state = data[0]
-                self.otherPar['h2state'] = self.h2state
-                print 'h2state: ',self.h2state
-                nTokMod+=1
-            elif tok == 'h2newset':
-                if data[0][0].lower() == 'f':
-                    self.otherPar['h2newset'] = False
-                else:
-                    self.otherPar['h2newset'] = True
-                print 'h2newset: ',self.otherPar['h2newset']
-                nTokMod+=1
-            elif tok=='water' or tok=='ice' or tok=='nh4sh' or tok=='nh3ice' or tok=='h2sice':
-                self.otherPar[tok] = float(data[0])
-                print tok, self.otherPar[tok]
-                #  should also check for units!!!
-            elif tok=='doppler':
-                self.Doppler = False
-                if data[0] in utils.affirmative:
-                    self.Doppler = True
-                print 'Doppler setting:  ',self.Doppler
-        fp.close()
-        return nTokMod
+        self.otherPar['h2state'] = self.config.h2state
+        self.otherPar['h2newset'] = self.config.h2newset
+        self.otherPar['water'] = self.config.water_p
+        self.otherPar['ice'] = self.config.ice_p
+        self.otherPar['nh4sh'] = self.config.nh4sh_p
+        self.otherPar['nh3ice'] = self.config.nh3ice_p
+        self.otherPar['h2sice'] = self.config.h2sice_p
+        self.otherPar['ch4'] = self.config.ch4_p
     
     def test(self,f=[1.,2.,3.,4.,5.],T=300.0,P=1.0,X=[0.9,0.1,0.001], D=None,otherPar=None,units='dBperkm',fignum=10,verbose=None,plot=True):
         """This just tests things - as well as reminds me how it works"""

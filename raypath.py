@@ -108,13 +108,13 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
             b = impact parameter (fractional distance to outer edge at that latitude in observer's coordinates)
             orientation = position angle of the planet [0]='tip', [1]='subearth latitude' """
     if gtype==None:
-        gtype = atm.gtype
+        gtype = atm.config.gtype
     if orientation == None:
-        orientation = atm.orientation
+        orientation = atm.config.orientation
     path = Ray()
-    req = atm.layerProperty[atm.LP['R']]   # radius of layers along equator
+    req = atm.layerProperty[atm.config.LP['R']]   # radius of layers along equator
     rNorm = req[0]
-    nr = atm.layerProperty[atm.LP['N']]    # refractive index of layers
+    nr = atm.layerProperty[atm.config.LP['N']]    # refractive index of layers
     # projected viewing
     if b_type != 'xy':
         sigma = b[1]*math.pi/180.0
@@ -122,7 +122,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
     if (b[0]**2 + b[1]**2) > 1.0:
         return path
 
-    f = 1.0 - atm.Rpol/atm.Req
+    f = 1.0 - atm.config.Rpol/atm.config.Req
     tip, rotate = __computeAspect__(orientation,f)
     print 'intersection:  (%.3f, %.3f)    ' % (b[0],b[1]),
     print 'aspect:  (%.4f,  %.4f)' % (tip*180.0/np.pi,rotate*180.0/np.pi)
@@ -179,8 +179,8 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
         rNextMag = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng,plot3d=False)
         rdots = np.dot( r[i],s[i+1] )
 
-        vw = np.interp(pclat,atm.vwlat,atm.vwdat)/1000.0
-        dopp = 1.0 - (atm.omega_m*rNowMag*math.cos(pclat*math.pi/180.0) + vw)*math.sin(delta_lng*math.pi/180.0)/3.0E5
+        vw = np.interp(pclat,atm.config.vwlat,atm.config.vwdat)/1000.0
+        dopp = 1.0 - (atm.config.omega_m*rNowMag*math.cos(pclat*math.pi/180.0) + vw)*math.sin(delta_lng*math.pi/180.0)/3.0E5
 
         # get ds, checking for exit, errors and warnings...
         try:

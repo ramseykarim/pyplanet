@@ -39,11 +39,11 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
 
     ### Set Pmin/Pmax if needed
     if Pmin==None:
-        Pmin = min(atm.gas[atm.C['P']])
+        Pmin = min(atm.gas[atm.config.C['P']])
     if Pmax==None:
-        Pmax = max(atm.gas[atm.C['P']])
-    zmin = np.interp(Pmax,atm.gas[atm.C['P']],atm.gas[atm.C['Z']])
-    zmax = np.interp(Pmin,atm.gas[atm.C['P']],atm.gas[atm.C['Z']])
+        Pmax = max(atm.gas[atm.config.C['P']])
+    zmin = np.interp(Pmax,atm.gas[atm.config.C['P']],atm.gas[atm.config.C['Z']])
+    zmax = np.interp(Pmin,atm.gas[atm.config.C['P']],atm.gas[atm.config.C['Z']])
     print "Regrid pressure limits:  ",Pmin,Pmax
     print "...corresponding z limits:  ",zmin,zmax
         
@@ -51,7 +51,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         atm.gas = np.fliplr(atm.gas)
         atm.cloud = np.fliplr(atm.cloud)
         atm.layerProperty = np.fliplr(atm.layerProperty)
-    if not np.all(np.diff(atm.gas[atm.C[xvar]]) > 0.0) or not np.all(np.diff(atm.cloud[atm.Cl[xvar]]) > 0.0):
+    if not np.all(np.diff(atm.gas[atm.config.C[xvar]]) > 0.0) or not np.all(np.diff(atm.cloud[atm.config.Cl[xvar]]) > 0.0):
         print 'Error in regrid:  abscissa not increasing - no regrid.'
         return 0.0
         
@@ -60,7 +60,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     if len(regrid) == 2:  #read abscissa points from file
         loglin = 'LIN'
         filename = regrid[1]
-        filename = os.path.join(atm.path,regrid[1])
+        filename = os.path.join(atm.config.path,regrid[1])
         try:
             reg = open(filename,'r')
         except IOError:
@@ -71,9 +71,9 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         for line in reg:
             xs.append(float(line))
         reg.close()
-        if xs[0] < atm.gas[atm.C['P']][0]:
+        if xs[0] < atm.gas[atm.config.C['P']][0]:
             print 'lower regrid bound error - will extrapolate'
-        if xs[-1] > atm.gas[atm.C['P']][-1]:
+        if xs[-1] > atm.gas[atm.config.C['P']][-1]:
             print 'upper regrid bound error - will extrapolate'
     elif len(regrid) == 3:   #compute absicissa and npts
         loglin = string.upper(regrid[1])
@@ -93,12 +93,12 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         print '...interpolating on '+xvar+' at '+str(step)+' '+utils.processingAtmLayerUnit+' ('+loglin+')'
         if loglin == 'LIN':
             regridding = True
-            v = atm.gas[atm.C[xvar]][0]
+            v = atm.gas[atm.config.C[xvar]][0]
             while regridding:
                 if xvar=='P':
                     P = v
                 else:
-                    P = np.interp(v,atm.gas[atm.C['Z']],atm.gas[atm.C['P']])
+                    P = np.interp(v,atm.gas[atm.config.C['Z']],atm.gas[atm.config.C['P']])
                     z = v
                 if xvar=='P' and P>Pmax:
                     regridding = False
@@ -144,41 +144,41 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     print 'interpType = '+interpType
     
     ### Interpolate gas onto the grid
-    for yvar in atm.C:
+    for yvar in atm.config.C:
         if yvar == xvar:
             continue
-        fv = interp1d(gas[atm.C[xvar]],gas[atm.C[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.gas[atm.C[yvar]] = fv(xs)
-        if fillval in atm.gas[atm.C[yvar]]:
+        fv = interp1d(gas[atm.config.C[xvar]],gas[atm.config.C[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
+        atm.gas[atm.config.C[yvar]] = fv(xs)
+        if fillval in atm.gas[atm.config.C[yvar]]:
             print 'Extrapolating gas '+yvar
-            atm.gas[atm.C[yvar]] = extrapolate(xs,atm.gas[atm.C[yvar]],fillval)
-        #atm.gas[atm.C[yvar]] = np.interp(xs,gas[atm.C[xvar]],gas[atm.C[yvar]])
-    atm.gas[atm.C[xvar]] = xs
+            atm.gas[atm.config.C[yvar]] = extrapolate(xs,atm.gas[atm.config.C[yvar]],fillval)
+        #atm.gas[atm.config.C[yvar]] = np.interp(xs,gas[atm.config.C[xvar]],gas[atm.config.C[yvar]])
+    atm.gas[atm.config.C[xvar]] = xs
     #return 1
     
     ### Interpolate cloud onto the grid
-    for yvar in atm.Cl:
+    for yvar in atm.config.Cl:
         if yvar == xvar:
             continue
-        fv = interp1d(cloud[atm.Cl[xvar]],cloud[atm.Cl[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.cloud[atm.Cl[yvar]] = fv(xs)
-        if fillval in atm.cloud[atm.Cl[yvar]]:
+        fv = interp1d(cloud[atm.config.Cl[xvar]],cloud[atm.config.Cl[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
+        atm.cloud[atm.config.Cl[yvar]] = fv(xs)
+        if fillval in atm.cloud[atm.config.Cl[yvar]]:
             print 'Extrapolating cloud '+yvar
-            atm.cloud[atm.Cl[yvar]] = extrapolate(xs,atm.cloud[atm.Cl[yvar]],fillval)
-        #atm.cloud[atm.Cl[yvar]] = np.interp(xs,cloud[atm.Cl[xvar]],cloud[atm.Cl[yvar]])
-    atm.cloud[atm.Cl[xvar]] = xs
+            atm.cloud[atm.config.Cl[yvar]] = extrapolate(xs,atm.cloud[atm.config.Cl[yvar]],fillval)
+        #atm.cloud[atm.config.Cl[yvar]] = np.interp(xs,cloud[atm.config.Cl[xvar]],cloud[atm.config.Cl[yvar]])
+    atm.cloud[atm.config.Cl[xvar]] = xs
 
     ### Interpolate layerProperties onto the grid
-    for yvar in atm.LP:
+    for yvar in atm.config.LP:
         if yvar == xvar:
             continue
-        fv = interp1d(layerProperty[atm.LP[xvar]],layerProperty[atm.LP[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.layerProperty[atm.LP[yvar]] = fv(xs)
-        if fillval in atm.layerProperty[atm.LP[yvar]]:
+        fv = interp1d(layerProperty[atm.config.LP[xvar]],layerProperty[atm.config.LP[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
+        atm.layerProperty[atm.config.LP[yvar]] = fv(xs)
+        if fillval in atm.layerProperty[atm.config.LP[yvar]]:
             print 'Extrapolating layer property '+yvar
-            atm.layerProperty[atm.LP[yvar]] = extrapolate(xs,atm.layerProperty[atm.LP[yvar]],fillval)
-        #atm.layerProperty[atm.LP[yvar]] = np.interp(xs,layerProperty[atm.LP[xvar]],layerProperty[atm.LP[yvar]])
-    atm.layerProperty[atm.LP[xvar]] = xs
+            atm.layerProperty[atm.config.LP[yvar]] = extrapolate(xs,atm.layerProperty[atm.config.LP[yvar]],fillval)
+        #atm.layerProperty[atm.config.LP[yvar]] = np.interp(xs,layerProperty[atm.config.LP[xvar]],layerProperty[atm.config.LP[yvar]])
+    atm.layerProperty[atm.config.LP[xvar]] = xs
 
     if xvar == 'Z':   ### flip array back
         atm.gas = np.fliplr(atm.gas)

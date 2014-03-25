@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import special
 import atmosphere as atm
+import config as  pcfg
 import alpha
 import brightness as bright
+import config
 import utils
 import datetime
 import os.path
@@ -19,7 +21,7 @@ class planet:
         """This is the 'executive function class to compute overall planetary emission
            Arguments here set defaults, however often get set specifically in run. See pyPlanet.pdf for documentation.
            Inputs:
-                name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune'
+                name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune' or 'functions' if you just want to load without running
                 freqs: options are:
                     - int/float:  does that one frequency
                     - list of length 3:  assumes it is [start,stop,step]
@@ -57,6 +59,8 @@ class planet:
             self.logFile = log
         self.log=utils.setupLogFile(self.logFile,path='Logs/')
         utils.log(self.log,self.planet+' start '+str(runStart),True)
+        self.plot = plot
+        self.verbose = verbose
 
         ### Some convenience values for the specific Neptune observations
         self.fvla = [4.86,8.46,14.94,22.46,43.34]
@@ -77,16 +81,15 @@ class planet:
         if b!= None:
             b = self.__bRequest__(b,[1,1])
 
+        ### Get config
         if config == 'manual' or config=='none':
             config = None
         else:
             config = os.path.join(self.planet,config)
-        self.config = config
-        self.plot = plot
-        self.verbose = verbose
+        self.config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
 
         ### Create atmosphere:  outputs are self.atm.gas, self.atm.cloud and self.atm.layerProperty
-        self.atm = atm.atmosphere(self.planet,config=config,log=self.log,verbose=verbose,plot=plot)
+        self.atm = atm.atmosphere(self.planet,config=self.config,log=self.log,verbose=verbose,plot=plot)
         self.atm.run()
         self.log.flush()
 
@@ -120,7 +123,7 @@ class planet:
 
         ### Next compute radiometric properties
         self.bright = bright.brightness(log=self.log,verbose=verbose,plot=plot)
-        if not self.alpha.Doppler:
+        if not self.config.Doppler:
             self.bright.layerAbsorption(freqs,self.atm,self.alpha)
         self.Tb=[]
         hit_b=[]
@@ -220,15 +223,15 @@ class planet:
             header['aspect'] = '# aspect tip, rotate not set\n'
             header['rNorm'] = '# rNorm not set\n'
         else:
-            resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.atm.distance)
+            resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.config.distance)
             print 'resolution = ',resolution
             header['res'] = '# res:  %f arcsec\n' % (resolution)
-            header['orientation'] = '# orientation:   %s\n' % (repr(self.atm.orientation))
+            header['orientation'] = '# orientation:   %s\n' % (repr(self.config.orientation))
             header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*self.tip, (180.0/math.pi)*self.rotate)
             header['rNorm'] = '# rNorm: %f\n' % self.rNorm
-        header['gtype'] = '# gtype: %s\n' % (self.atm.gtype)
-        header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.atm.Req,self.atm.Rpol)
-        header['distance'] = '# distance:  %f km\n' % (self.atm.distance)
+        header['gtype'] = '# gtype: %s\n' % (self.config.gtype)
+        header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.config.Req,self.config.Rpol)
+        header['distance'] = '# distance:  %f km\n' % (self.config.distance)
         
     def bRequest(self,b,block):
         b=self.__bRequest__(b,block)

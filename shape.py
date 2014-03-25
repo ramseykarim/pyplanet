@@ -72,15 +72,15 @@ class Shape:
     def calcFromReference(self, planet, r, pclat=90.0, delta_lng=0.0, direction=1.0, plot3d=False, latstep='default',color='k'):
         print 'Need to fix plot etc and add direction!!!!'
         if type(self.referenceGeoid) == bool:
-            print 'Calculating reference geoid at P_ref=%f' % (planet.p_ref)
-            self.referenceRadius=planet.Req
-            self.calcGeoid(planet,planet.Req,-90,0.0,plot3d=False,latstep=latstep)
+            print 'Calculating reference geoid at P_ref=%f' % (planet.config.p_ref)
+            self.referenceRadius=planet.config.Req
+            self.calcGeoid(planet,planet.config.Req,-90,0.0,plot3d=False,latstep=latstep)
             tmp = []
             for i in range(len(self.referenceList)):
                 if not i%self.referenceDecimate:
                     tmp.append(self.referenceList[i])
             self.referenceGeoid = np.flipud(np.array(tmp))
-            self.calcGeoid(planet,planet.Req,90,0.0,plot3d=False,latstep=latstep)
+            self.calcGeoid(planet,planet.config.Req,90,0.0,plot3d=False,latstep=latstep)
             tmp = []
             for i in range(len(self.referenceList)):
                 if not i%self.referenceDecimate:
@@ -148,12 +148,12 @@ class Shape:
         if self.gtype == 'reference':
             self.referenceList = []
 
-        GM = np.interp(r,planet.layerProperty[planet.LP['R']],planet.layerProperty[planet.LP['GM']])
+        GM = np.interp(r,planet.layerProperty[planet.config.LP['R']],planet.layerProperty[planet.config.LP['GM']])
         for latv in pclatSteps:
             radlatv = latv*np.pi/180.0
-            vw = np.interp(latv,planet.vwlat,planet.vwdat)/1000.0
-            self.omega = planet.omega_m + vw/(r*np.cos(radlatv))
-            self.__gravity__(latv, delta_lng, r, GM, self.omega, planet.Jn, planet.RJ)
+            vw = np.interp(latv,planet.config.vwlat,planet.config.vwdat)/1000.0
+            self.omega = planet.config.omega_m + vw/(r*np.cos(radlatv))
+            self.__gravity__(latv, delta_lng, r, GM, self.omega, planet.config.Jn, planet.config.RJ)
             if plot3d:
                 _x.append(self.r[_X])
                 _y.append(self.r[_Y])
@@ -229,7 +229,7 @@ class Shape:
     def calcEllipse(self, planet, r, pclat, delta_lng, direction=1.0, gtype='ellipse', plot3d=False, color='k'):
         a = r
         if gtype=='ellipse':
-            b = (planet.Rpol/planet.Req)*r
+            b = (planet.config.Rpol/planet.config.Req)*r
         else:
             b = r
         lat = pclat*np.pi/180.0
@@ -249,7 +249,7 @@ class Shape:
         r_vec = np.array([0.0, b*math.sin(lat), a*math.cos(lat)])
         r_vec = rotY(lng,r_vec)
         self.rmag = np.linalg.norm(r_vec)
-        GM = np.interp(r,planet.layerProperty[planet.LP['R']],planet.layerProperty[planet.LP['GM']])
+        GM = np.interp(r,planet.layerProperty[planet.config.LP['R']],planet.layerProperty[planet.config.LP['GM']])
         self.g_static = GM/self.rmag**2
         try:
             self.gamma = nsl*math.acos(np.dot(r_vec,norm)/self.rmag)  # don't need to worry about direction here, since norm etc defined

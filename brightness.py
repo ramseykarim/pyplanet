@@ -26,8 +26,8 @@ class brightness():
                 label = '%.1f GHz' % (f)
                 plt.loglog(self.layerAlpha[i],P,label=label)
             v = list(plt.axis())
-            v[2] = 100.0*math.ceil(atm.gas[atm.C['P']][-1]/100.0)
-            v[3] = 1.0E-7*math.ceil(atm.gas[atm.C['P']][0]/1E-7)
+            v[2] = 100.0*math.ceil(atm.gas[atm.config.C['P']][-1]/100.0)
+            v[3] = 1.0E-7*math.ceil(atm.gas[atm.config.C['P']][0]/1E-7)
             plt.axis(v)
             plt.xlabel(alphaUnits)
             plt.ylabel('P [bars]')
@@ -44,13 +44,13 @@ class brightness():
         self.freqs = freqs
         numLayers = len(atm.gas[0])
         layerAlp=[]
-        P = atm.gas[atm.C['P']]
-        T = atm.gas[atm.C['T']]
+        P = atm.gas[atm.config.C['P']]
+        T = atm.gas[atm.config.C['T']]
         utils.log(self.log,'%d layers' % (numLayers),True)
         for layer in range(numLayers):
             print '\r\tAbsorption in layer %d   ' % (layer+1),
             sys.stdout.flush()
-            layerAlp.append(alpha.getAlpha(freqs,T[layer],P[layer],atm.gas[:,layer],atm.C,atm.cloud[:,layer],atm.Cl,units=alphaUnits,verbose=verbose))
+            layerAlp.append(alpha.getAlpha(freqs,T[layer],P[layer],atm.gas[:,layer],atm.config.C,atm.cloud[:,layer],atm.config.Cl,units=alphaUnits,verbose=verbose))
         layerAlp = np.array(layerAlp).transpose()
         print ' '
         return layerAlp 
@@ -88,9 +88,9 @@ class brightness():
         self.W.append(Ws)
         self.Tb_lyr.append(Tbs)
 
-        if alpha.Doppler:
-            P = atm.gas[atm.C['P']]
-            T = atm.gas[atm.C['T']]
+        if alpha.config.Doppler:
+            P = atm.gas[atm.config.C['P']]
+            T = atm.gas[atm.config.C['T']]
             alphaUnits = 'invcm'
             #--debug--#self.debugDoppler = []
             print ''
@@ -105,19 +105,19 @@ class brightness():
 
             
             for j,f in enumerate(freqs):
-                if not alpha.Doppler:
+                if not alpha.config.Doppler:
                     a1 = self.layerAlpha[j][ii1]
                     a0 = self.layerAlpha[j][ii]
                 else:
                     fshifted=[[f/self.path.doppler[i]],[f/self.path.doppler[i+1]]]
                     #--debug--#self.debugDoppler.append(fshifted[0][0])
                     print '\rdoppler corrected frequency at layer',i,
-                    a1 = alpha.getAlpha(fshifted[0],T[ii1],P[ii1],atm.gas[:,ii1],atm.C,atm.cloud[:,ii1],atm.Cl,units=alphaUnits,verbose=False)
-                    a0 = alpha.getAlpha(fshifted[1],T[ii],P[ii],atm.gas[:,ii],atm.C,atm.cloud[:,ii],atm.Cl,units=alphaUnits,verbose=False)
+                    a1 = alpha.getAlpha(fshifted[0],T[ii1],P[ii1],atm.gas[:,ii1],atm.config.C,atm.cloud[:,ii1],atm.config.Cl,units=alphaUnits,verbose=False)
+                    a0 = alpha.getAlpha(fshifted[1],T[ii],P[ii],atm.gas[:,ii],atm.config.C,atm.cloud[:,ii],atm.config.Cl,units=alphaUnits,verbose=False)
                 dtau = (a0 + a1)*ds/2.0
                 taus.append(self.tau[ii][j] + dtau)         # this is tau_(i+1)
-                T1 = atm.gas[atm.C['T']][ii1]
-                T0 = atm.gas[atm.C['T']][ii]
+                T1 = atm.gas[atm.config.C['T']][ii1]
+                T0 = atm.gas[atm.config.C['T']][ii]
                 
                 if discAverage==True:
                     Ws.append( 2.0*a1*ss.expn(2,taus[j]) )     # this is W_(i+1) for disc average
@@ -146,8 +146,8 @@ class brightness():
             plot = False
         if plot:
             # save a local copy of
-            self.P = atm.gas[atm.C['P']][0:len(self.W[0])]
-            #self.z = atm.gas[atm.C['Z']][0:len(self.W[0])]
+            self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
+            #self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
             plt.figure('radtran')
             plt.subplot(121)
             for i,f in enumerate(freqs):
