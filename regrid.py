@@ -13,211 +13,107 @@ import atmosphere as atm
 def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     """This puts atm and cloud on the same grid used later for calculations.  It has three different regimes:
         1 - interpolating within given points:  P,T,z are assumed to follow given adiabat and constituents are linearly interpolated
+            NOTE FOR NOW IT JUST DOES THE LINEAR INTERPOLATION
         2 - extrapolating outward:  project last slope out
         3 - interpolating inward:  uses a dry adiabat
-       It has two types:
-        1 - use grid points in file
-            format: 'filename'
+       It has three types:
+        1 - pressure grid points in file
+            format: 'filename' (string)
                 where
                     'filename' is a file with the pressures in bars (increasing pressure)
-        2 - provide step/range information, in one of two ways
-            a - format:  'p/z step unit'
+        2 - fixed z step NOT IMPLEMENTED YET
+            format:  'step unit'
+                where
+                    'step' step size (float)
+                    'unit' km only right now (string)
+        3 - fixed number of steps in logP
+            format:  'number'
                     where
-                        'p/z' states whether defined in pressure or altitude from reference pressure
-                        'step' step to take
-                        'unit' unit used (bars, km)
-            b - format:  'p/z number'
-                    where
-                        'p/z states whether defined in pressure or altitude from reference pressure
-                        'number' numbers of steps within range
-       Pmin/Pmax are optional for type 2 (defaults are min/max in gas) and not used in type 1.
+                        'number' numbers of steps within range (int)
+       Pmin/Pmax are optional for type 2/3 (defaults are min/max in gas) and not used in type 1."""
 
-
-            
-        regridType is a 2,3 or 4 element string with the following regridding options:
-             1:  variable to regrid on ('P' or 'z')
-             2:  log or linear regridding ('log' or 'lin') OR filename containing points
-             3:  value (either a float or an integer for number of levels) 
-             4:  ['unit' - if present assumes that the grid is on values not number of steps]
-             e.g. P log 100            ==> 100 layers evenly spaced in log
-                  z lin 1 km (default) ==> layers as needed, evenly spaced by 1 km
-                  z zpoint.dat         ==> use values in zpoint.dat
-        Pmin/Pmax are optional - defaults are min/max in gas.
-        Assumes that the gas range encompasses cloud range"""
-
-    ### Determine regridType and parse string
+    #set regridType/regrid
     if regridType==None:
         regridType = atm.config.regridType
     if string.lower(regridType) == 'none' or regridType == None:
         print 'No regridding.  Note that there is a risk that not everything is on the same grid...\n'
         return 0
     if string.lower(regridType) == 'auto' or string.lower(regridType) == 'default':
-        regridType = 'z 1 km'
-
-
+        regridType = '1000'
     regrid = regridType.split()
-    regrid_using = string.upper(regrid[0])
-    try:
-        regrid_unit = string.upper(regrid[2])
-    except IndexError:
-        regrid_unit = '-'
-    print '---regrid:  '+regridType
+
+    #set default Pmin/Pmax
+    if Pmin==None:
+        Pmin = min(atm.gas[atm.config.C['P']])
+    if Pmax==None:
+        Pmax = max(atm.gas[atm.config.C['P']])
+
+    #set Pgrid or zstep(not yet)
     if len(regrid) == 1:
-        regrid_using = regrid[1]
-        Pgrid, zgrid = _procF_(atm,regrid_using)
-    elif regrid_using == 'P':
-        Pgrid, zgrid = _procP_(atm,Pmin,Pmax,regrid[1],regrid_unit)
-    elif regrid_using == 'Z':
-        Pgrid, zbrid = _procZ_(atm,Pmin,Pmax,regrid[1],regrid_unit)
-
-
-
-
-        
-    if xvar == 'Z':### flip the array so that z is increasing so that interp works
-        atm.gas = np.fliplr(atm.gas)
-        atm.cloud = np.fliplr(atm.cloud)
-        atm.layerProperty = np.fliplr(atm.layerProperty)
-    if not np.all(np.diff(atm.gas[atm.config.C[xvar]]) > 0.0) or not np.all(np.diff(atm.cloud[atm.config.Cl[xvar]]) > 0.0):
-        print 'Error in regrid:  abscissa not increasing - no regrid.'
-        return 0.0
-        
-    ###xs is the desired abscissa - there are multiple returns embedded if error in regridType
-    xs = []
-    if len(regrid) == 2:  #read abscissa points from file
-        loglin = 'LIN'
-        filename = regrid[1]
-        filename = os.path.join(atm.config.path,regrid[1])
         try:
-            reg = open(filename,'r')
-        except IOError:
-            print "file '"+filename+"' not found - no regrid"
-            return 0
-        print '...interpolating on '+xvar+' from file '+filename
-        xs = []
-        for line in reg:
-            xs.append(float(line))
-        reg.close()
-        if xs[0] < atm.gas[atm.config.C['P']][0]:
-            print 'lower regrid bound error - will extrapolate'
-        if xs[-1] > atm.gas[atm.config.C['P']][-1]:
-            print 'upper regrid bound error - will extrapolate'
-    elif len(regrid) == 3:   #compute absicissa and npts
-        loglin = string.upper(regrid[1])
-        npts = int(regrid[2])
-        xs = [0] #BUT REALLY NEED TO COMPUTE AT npts
-        print regridType+' not yet supported - no regrid'
-        return 0
-    elif len(regrid) == 4:
-        loglin = string.upper(regrid[1])
-        step = float(regrid[2])
-        unit = regrid[3]
-        if unit in utils.Units:
-            step = step*utils.Units[unit]/utils.Units[utils.processingAtmLayerUnit]
-        else:
-            print "Error in regrid '"+regridType+"' - no regrid"
-            return 0
-        print '...interpolating on '+xvar+' at '+str(step)+' '+utils.processingAtmLayerUnit+' ('+loglin+')'
-        if loglin == 'LIN':
-            regridding = True
-            v = atm.gas[atm.config.C[xvar]][0]
-            while regridding:
-                if xvar=='P':
-                    P = v
-                else:
-                    P = np.interp(v,atm.gas[atm.config.C['Z']],atm.gas[atm.config.C['P']])
-                    z = v
-                if xvar=='P' and P>Pmax:
-                    regridding = False
-                elif xvar=='Z' and z>zmax:
-                    regridding = False
-                elif P<Pmin or P>Pmax:
-                    pass
-                else:
-                    xs.append(v)
-                v+=step
-        elif loglin == 'LOG':
-            print regridType+" not yet supported - no regrid"
-            print "BUT CAN I BETTER INTEGRATE LOG VERSION INTO LIN VERSION JUST ABOVE?"
-            return 0
-        else:
-            print "Error in regrid '"+regridType+"' - no regrid"
-            return 0
+            regrid_numsteps = int(regrid[0])
+            regridType = 3
+            Pgrid = np.array(np.log10(Pmin),np.log10(Pmax),regrid_numsteps)
+        except ValueError:
+            regrid_file = regrid[0]
+            regridType = 1
+            Pgrid = _procF_(regrid_file)
+            Pmin = min(Pgrid)
+            Pmax = max(Pgrid)
     else:
-        print "Error in regrid '"+regridType+"' - no regrid"
+        regrid_stepsize = float(regrid[0])
+        regrid_unit = regrid[1]
+        regridType = 2
+        Pgrid = None
+    if not Pgrid:
+        print 'not implemented yet - no regrid'
         return 0
-    nAtm = len(xs)
-    xs = np.array(xs)
 
     ### Copy over for new array size
-    gas = atm.gas
-    nPcs = atm.gas.shape[0]
-    atm.gas = np.resize(atm.gas,(nPcs,nAtm))
-    cloud = atm.cloud
-    nPcs = atm.cloud.shape[0]
-    atm.cloud = np.resize(atm.cloud,(nPcs,nAtm))
-    layerProperty = atm.layerProperty
-    nPcs = atm.layerProperty.shape[0]
-    atm.layerProperty = np.resize(atm.layerProperty,(nPcs,nAtm))
-    
+    nAtm = len(Pgrid)
+    nGas = atm.gas.shape[0]
+    gas = np.zeros((nGas,nAtm))
+    nCloud = atm.cloud.shape[0]
+    cloud = np.zeros((nCloud,nAtm))
+
     berr = False
     interpType = 'linear'
-    #interpType = 3
     fillval = -999.9
-    print 'interpType = '+interpType
-    
     ### Interpolate gas onto the grid
+    Pinput = atm.gas[atm.config.C['P']]
+    gas[atm.config.C['P']] = Pgrid
     for yvar in atm.config.C:
-        if yvar == xvar:
+        if yvar == 'P':
             continue
-        fv = interp1d(gas[atm.config.C[xvar]],gas[atm.config.C[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.gas[atm.config.C[yvar]] = fv(xs)
-        if fillval in atm.gas[atm.config.C[yvar]]:
-            print 'Extrapolating gas '+yvar
-            atm.gas[atm.config.C[yvar]] = extrapolate(xs,atm.gas[atm.config.C[yvar]],fillval)
-        #atm.gas[atm.config.C[yvar]] = np.interp(xs,gas[atm.config.C[xvar]],gas[atm.config.C[yvar]])
-    atm.gas[atm.config.C[xvar]] = xs
-    #return 1
-    
-    ### Interpolate cloud onto the grid
+        fv = interp1d(Pinput,atm.gas[atm.config.C[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
+        gas[atm.config.C[yvar]] = fv(PGrid)
+    ### Extrapolate gas if needed
+    if fillval in gas:
+        gas = extrapolate(gas,fillval,atm)
+    atm.gas = gas
+    ### Interpolate cloud onto the grid - fillval=0.0 extrapolates since we assume no clouds outside range and
+    ###      don't care about other stuff then either
+    fillval = 0.0
+    Pinput = atm.gas[atm.config.Cl['P']]
+    cloud[atm.config.Cl['P']] = Pgrid
     for yvar in atm.config.Cl:
-        if yvar == xvar:
+        if yvar == 'P':
             continue
-        fv = interp1d(cloud[atm.config.Cl[xvar]],cloud[atm.config.Cl[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.cloud[atm.config.Cl[yvar]] = fv(xs)
-        if fillval in atm.cloud[atm.config.Cl[yvar]]:
-            print 'Extrapolating cloud '+yvar
-            atm.cloud[atm.config.Cl[yvar]] = extrapolate(xs,atm.cloud[atm.config.Cl[yvar]],fillval)
-        #atm.cloud[atm.config.Cl[yvar]] = np.interp(xs,cloud[atm.config.Cl[xvar]],cloud[atm.config.Cl[yvar]])
-    atm.cloud[atm.config.Cl[xvar]] = xs
+        fv = interp1d(Pinput,atm.cloud[atm.config.Cl[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
+        cloud[atm.config.Cl[yvar]] = fv(Pgrid)
+    atm.cloud = cloud
 
-    ### Interpolate layerProperties onto the grid
-    for yvar in atm.config.LP:
-        if yvar == xvar:
-            continue
-        fv = interp1d(layerProperty[atm.config.LP[xvar]],layerProperty[atm.config.LP[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        atm.layerProperty[atm.config.LP[yvar]] = fv(xs)
-        if fillval in atm.layerProperty[atm.config.LP[yvar]]:
-            print 'Extrapolating layer property '+yvar
-            atm.layerProperty[atm.config.LP[yvar]] = extrapolate(xs,atm.layerProperty[atm.config.LP[yvar]],fillval)
-        #atm.layerProperty[atm.config.LP[yvar]] = np.interp(xs,layerProperty[atm.config.LP[xvar]],layerProperty[atm.config.LP[yvar]])
-    atm.layerProperty[atm.config.LP[xvar]] = xs
-
-    if xvar == 'Z':   ### flip array back
-        atm.gas = np.fliplr(atm.gas)
-        atm.cloud = np.fliplr(atm.cloud)
-        atm.layerProperty = np.fliplr(atm.layerProperty)
-    
+    atm.computeProp(False)
     return 1
 
-def _procF_(atm,filename):
+def _procF_(filename):
     filename = os.path.join(atm.config.path,filename)
     try:
         reg = open(filename,'r')
     except IOError:
         print "file '"+filename+"' not found - no regrid"
         return 0
-    print '...interpolating on '+regrid_using+' from file '+filename
+    print '...interpolating on file '+filename
     Pgrid = []
     for line in reg:
         Pgrid.append(float(line))
@@ -226,64 +122,30 @@ def _procF_(atm,filename):
     if not np.all(np.diff(Pgrid) > 0.0):
         print 'Error in regrid:  P not increasing - flipping around and hoping for the best'
         Pgrid = np.fliplr(Pgrid)
-    zgrid = None
-    return Pgrid, zgrid
+    return Pgrid
 
-def _procP_(atm,Pmin,Pmax,data,regrid_unit):
-    zmin = None
-    zmax = None
-    if Pmin==None:
-        Pmin = min(atm.gas[atm.config.C['P']])
-        zmax = max(atm.gas[atm.config.C['Z']])
-    if Pmax==None:
-        Pmax = max(atm.gas[atm.config.C['P']])
-        zmin = min(atm.gas[atm.config.C['Z']])
-    if regrid_unit=='-':
-        regrid_numsteps = int(data)
-        regrid_stepsize = (Pmax - Pmin)/regrid_numsteps
-    else:
-        regrid_stepsize = float(data)
-        regrid_numsteps = int( (Pmax-Pmin)/regrid_stepsize) + 1
-    if zmin is None and zmax is None:
-        zgrid = None
-    else:
-        zgrid = [zmax,zmin]
-    Pgrid = []
-    for i in range(regrid_numsteps):
-        Pgrid.append(Pmin + i*regrid_stepsize)
-    Pgrid = np.array(Pgrid)
-    return Pgrid, zgrid
+def extrapolate(gas,fillval,atm):
+    print 'First extrapolate in, then the rest of the fillvals get extrapolated out'
+    Pmin = min(atm.gas[atm.config.C['P']])
+    Pmax = max(atm.gas[atm.config.C['P']])
+    #extrapolate constituents in as fixed mixing ratios
+    for yvar in atm.config.C:
+        if yvar=='Z' or yvar=='P' or yvar=='T' or yvar=='DZ':
+            continue
+        val = atm.gas[atm.config.C[yvar]][-1]
+        for i,P in enumerate(gas[atm.config.C['P']]):
+            if P>Pmax:
+                gas[atm.config.C[yvar]][i]=val
+    #extrapolate T and z as dry adiabat in hydrostatic equilibrium
 
-def _procZ_(atm,Pmin,Pmax,data,regrid_unit):
-    zmin = None
-    zmax = None
-    if Pmin==None:
-        Pmin = min(atm.gas[atm.config.C['P']])
-        zmax = max(atm.gas[atm.config.C['Z']])
-    if Pmax==None:
-        Pmax = max(atm.gas[atm.config.C['P']])
-        zmin = min(atm.gas[atm.config.C['Z']])
-    if regrid_unit=='-':
-        regrid_numsteps = int(data)
-        regrid_stepsize = None
-        if zmin and zmax:
-            regrid_stepsize = (zmax-zmin)/regrid_numsteps
-    else:
-        regrid_stepsize = float(data)
-        regrid_numsteps = None
-        if zmin and zmax:
-            regrid_numsteps = int( (zmax-zmin)/regrid_stepsize) + 1
-    Pgrid = [Pmin,Pmax]
-    zgrid = None
-    if regrid_stepsize and regrid_numsteps:
-        for i in range(regrid_numsteps):
-            zgrid.append(zmax - i*regrid_stepsize)
-        zgrid = np.array(zgrid)
-    return Pgrid, zgrid
+    #put in DZ
 
-
-
-def extrapolate(x,y,fillval):
+    #extrapolate out along last slope
+    for yvar in atm.config.C:
+        if yvar == 'P':
+            continue
+        gas[atm.config.C[yvar]] = extrapolateOut(gas[atm.config.C['P']],gas[atm.config.C[yvar]],fillval)
+def extrapolateOut(x,y,fillval):
     b = mlab.find(y!=fillval)
     if y[0] == fillval:
         slope = (y[b[0]+1] - y[b[0]])/(x[b[0]+1] - x[b[0]])
