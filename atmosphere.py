@@ -433,30 +433,37 @@ class atmosphere:
             self.layerProperty[self.config.LP['Z']].append(zv)
             rr = z_at_p_ref + zv - zOffset
             self.layerProperty[self.config.LP['R']].append(rr)   # note that this is the "actual" z along equator  referenced to planet center (aka radius)
-            ###set amu
-            amutmp = properties.AMU_H2*self.gas[self.config.C['H2']][i]   + properties.AMU_He*self.gas[self.config.C['HE']][i]   + \
-                     properties.AMU_H2S*self.gas[self.config.C['H2S']][i] + properties.AMU_NH3*self.gas[self.config.C['NH3']][i] + \
-                     properties.AMU_H2O*self.gas[self.config.C['H2O']][i] + properties.AMU_CH4*self.gas[self.config.C['CH4']][i] + \
-                     properties.AMU_PH3*self.gas[self.config.C['PH3']][i]
-            self.layerProperty[self.config.LP['AMU']].append(amutmp)
-            ###set GM
+            ###set mean amu
+            amulyr = 0.0
+            for key in properties.amu:
+                if key in self.config.C:
+                    amulyr+=properties.amu[key]*self.gas[self.config.C[key]][i]
+            self.layerProperty[self.config.LP['AMU']].append(amulyr)
+            ###set GM pre-calc (normalized further down) and get lapse rate
             if not i:
                 self.layerProperty[self.config.LP['GM']].append(0.0)
+                self.layerProperty[self.config.LP['LAPSE']].append(0.0)
             else:
-                Gdm = self.layerProperty[self.config.LP['GM']][i-1] \
-                      + (1.0e11)*properties.GravConst*(4.0*math.pi*amutmp*P*abs(zv-self.gas[self.config.C['Z']][i-1])*rr**2) \
-                      / (properties.R*T)                  # in km3/s2
-                self.layerProperty[self.config.LP['GM']].append( Gdm )
-            ###set Refr/n
-            refrtmp = properties.REFR_H2*self.gas[self.config.C['H2']][i]      + properties.REFR_He*self.gas[self.config.C['HE']][i]   + \
-                      properties.REFR_H2S*self.gas[self.config.C['H2S']][i]    + properties.REFR_NH3*self.gas[self.config.C['NH3']][i] + \
-                      properties.REFR_H2O(T)*self.gas[self.config.C['H2O']][i] + properties.REFR_CH4*self.gas[self.config.C['CH4']][i] + \
-                      properties.REFR_PH3*self.gas[self.config.C['PH3']][i]
-            refrtmp*=P*(293.0/T)
-            self.layerProperty[self.config.LP['REFR']].append(refrtmp)
-            refrtmp = refrtmp/1.0E6 + 1.0
-            self.layerProperty[self.config.LP['N']].append(refrtmp)
-        GMnorm = self.layerProperty[self.config.LP['GM']][iOffset]
+                rho = (amulyr*P)/(properties.R*T)
+                dr = abs(zv - self.gas[self.config.C['Z']][i-1])
+                dV = 4.0*math.pi*(rr**2)*dr
+                dM = 1.0e11*rho*dV
+                GdM = self.layerProperty[self.config.LP['GM']][i-1] + properties.GravConst*dM    # in km3/s2
+                self.layerProperty[self.config.LP['GM']].append( GdM )  # mass added as you make way into atmosphere by radius r (times G)
+                dT = abs(T - self.gas[self.config.C['T']][i-1])
+                self.layerProperty[self.config.LP['LAPSE']].append(dT/dr)
+            ###set refractivity and index of refraction
+            refrlyr = 0.0
+            for key in properties.refractivity:
+                if key in self.config.C:
+                    refrlyr+=properties.refractivity[key]*self.gas[self.config.C[key]][i]
+            refrlyr = refrlyr*P*(293.0/T)
+            self.layerProperty[self.config.LP['REFR']].append(refrlyr)
+            nlyr = refrlyr/1.0E6 + 1.0
+            self.layerProperty[self.config.LP['N']].append(nlyr)
+ 
+        ###Now need to normalize GM to planet and calculate scale height (H)
+        GMnorm = self.layerProperty[self.config.LP['GM']][iOffset]  # G*(Mass added by p_ref)
         for i, mv in enumerate(self.layerProperty[self.config.LP['GM']]):
             gm = self.config.GM_ref - (mv-GMnorm)
             self.layerProperty[self.config.LP['GM']][i] = gm
@@ -464,7 +471,7 @@ class atmosphere:
             m_bar = self.layerProperty[self.config.LP['AMU']][i]
             T = self.gas[self.config.C['T']][i]
             self.layerProperty[self.config.LP['H']].append( (properties.R*T)/(little_g*m_bar)/1000.0 )
-
+            self.layerProperty[self.config.LP['g']].append( little_g )
         self.layerProperty = np.array(self.layerProperty)
             
     def computeCloud(self,verbose=False):
