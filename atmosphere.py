@@ -104,7 +104,8 @@ class atmosphere:
             return 0
         else:
             self.propGen[otherType](verbose=verbose)
-        
+
+        ### Put onto common grid
         regridded = regrid.regrid(self,regridType=regridType,Pmin=Pmin,Pmax=Pmax)
         self.nAtm = len(self.gas[0])
 
@@ -119,10 +120,10 @@ class atmosphere:
             self.plotProp()
         return self.nAtm
 
-    def getval(self,val=None,vtype='all'):
+    def getval(self,val=None,vtype='gas'):
         """Returns one of the constituent or cloud profiles"""
         if val == None:
-            print "Usage:  getVal('v',['gas'/'cloud'/'other'/'all'])"
+            print "Usage:  getVal('v',['gas'/'cloud'/'other'])"
             print "    'gas' is default"
             print 'These are the gas values:'
             print self.config.C
@@ -136,17 +137,17 @@ class atmosphere:
         rv = 0
         found = False
         
-        if vt=='gas' or vt=='all':
+        if vt=='gas':
             if self.config.C.has_key(v):
                 rv = self.gas[self.config.C[v]]
                 print 'Found '+val+' in gas'
                 found = True
-        elif vt=='cloud' or vt=='all':
+        elif vt=='cloud':
             if self.config.Cl.has_key(v):
                 rv = self.cloud[self.config.Cl[v]]
                 print 'Found '+val+' in cloud'
                 found = True
-        elif vt=='other' or vt=='all':
+        elif vt=='other':
             if self.config.LP.has_key(v):
                 rv = self.layerProperty[self.config.LP[v]]
                 print 'Found '+val+' in layerProperty'
@@ -289,6 +290,7 @@ class atmosphere:
             monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
             print "Error in "+gasFile+".  Pressure not monotonically increasing"
+        self.gas[self.config.C['DZ']] = np.abs(np.append(np.diff(self.gas[self.config.C['Z']]),0.0))
         return self.nGas
 
     def writeGas(self,outputFile='gas.dat'):
@@ -360,6 +362,7 @@ class atmosphere:
             monotonic = np.all(np.diff(self.cloud[self.config.Cl['P']])>0.0)
         if not monotonic:
             print "Error in "+cloudFile+".  Pressure not monotonically increasing"
+        self.cloud[self.config.Cl['DZ']] = np.abs(np.append(np.diff(self.cloud[self.config.Cl['Z']]),0.0))
         return self.nCloud
 
     def readProp(self,otherFile=None,verbose=False):
@@ -474,7 +477,7 @@ class atmosphere:
             
     def computeCloud(self,verbose=False):
         """This computes cloud stuff"""
-        print 'computeCloud oes nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
+        print 'computeCloud does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
     def computeGas(self,verbose=False):
         """Computes an atmosphere given stuff"""
         print 'computeGas does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'

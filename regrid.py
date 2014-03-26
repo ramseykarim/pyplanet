@@ -1,14 +1,11 @@
-import math
 import string
-import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy.interpolate import interp1d
 import numpy as np
 import utils
-import sys
-import os
+import atmosphere
+import properties
 import os.path
-import atmosphere as atm
 
 def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     """This puts atm and cloud on the same grid used later for calculations.  It has three different regimes:
@@ -53,9 +50,10 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         try:
             regrid_numsteps = int(regrid[0])
             regridType = 3
-            Pgrid = np.array(np.log10(Pmin),np.log10(Pmax),regrid_numsteps)
+            Pgrid = np.logspace(np.log10(Pmin),np.log10(Pmax),regrid_numsteps)
+            print 'Regridding on %d steps' % (regrid_numsteps)
         except ValueError:
-            regrid_file = regrid[0]
+            regrid_file = os.path.join(atm.config.path,regrid[0])
             regridType = 1
             Pgrid = _procF_(regrid_file)
             Pmin = min(Pgrid)
@@ -65,7 +63,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         regrid_unit = regrid[1]
         regridType = 2
         Pgrid = None
-    if not Pgrid:
+    if Pgrid is None:
         print 'not implemented yet - no regrid'
         return 0
 
@@ -76,25 +74,27 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     nCloud = atm.cloud.shape[0]
     cloud = np.zeros((nCloud,nAtm))
 
+    ### Interpolate gas onto the grid
     berr = False
     interpType = 'linear'
     fillval = -999.9
-    ### Interpolate gas onto the grid
     Pinput = atm.gas[atm.config.C['P']]
     gas[atm.config.C['P']] = Pgrid
     for yvar in atm.config.C:
         if yvar == 'P':
             continue
         fv = interp1d(Pinput,atm.gas[atm.config.C[yvar]],kind=interpType,fill_value=fillval,bounds_error=berr)
-        gas[atm.config.C[yvar]] = fv(PGrid)
+        gas[atm.config.C[yvar]] = fv(Pgrid)
     ### Extrapolate gas if needed
     if fillval in gas:
-        gas = extrapolate(gas,fillval,atm)
+        gpar = (atm.layerProperty[atm.config.LP['g']][-1],atm.layerProperty[atm.config.LP['R']][-1],atm.layerProperty[atm.config.LP['P']][-1])
+        gas = extrapolate(gas,fillval,atm,gpar)
     atm.gas = gas
+    
     ### Interpolate cloud onto the grid - fillval=0.0 extrapolates since we assume no clouds outside range and
     ###      don't care about other stuff then either
     fillval = 0.0
-    Pinput = atm.gas[atm.config.Cl['P']]
+    Pinput = atm.cloud[atm.config.Cl['P']]
     cloud[atm.config.Cl['P']] = Pgrid
     for yvar in atm.config.Cl:
         if yvar == 'P':
@@ -104,16 +104,16 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     atm.cloud = cloud
 
     atm.computeProp(False)
+    print 'Regrid:  %d levels' % (nAtm)
     return 1
 
 def _procF_(filename):
-    filename = os.path.join(atm.config.path,filename)
     try:
         reg = open(filename,'r')
     except IOError:
         print "file '"+filename+"' not found - no regrid"
         return 0
-    print '...interpolating on file '+filename
+    print 'Regridding on file '+filename
     Pgrid = []
     for line in reg:
         Pgrid.append(float(line))
@@ -124,8 +124,8 @@ def _procF_(filename):
         Pgrid = np.fliplr(Pgrid)
     return Pgrid
 
-def extrapolate(gas,fillval,atm):
-    print 'First extrapolate in, then the rest of the fillvals get extrapolated out'
+def extrapolate(gas,fillval,atm,gpar):
+    """First extrapolate in, then the rest of the fillvals get extrapolated out"""
     Pmin = min(atm.gas[atm.config.C['P']])
     Pmax = max(atm.gas[atm.config.C['P']])
     #extrapolate constituents in as fixed mixing ratios
@@ -137,8 +137,30 @@ def extrapolate(gas,fillval,atm):
             if P>Pmax:
                 gas[atm.config.C[yvar]][i]=val
     #extrapolate T and z as dry adiabat in hydrostatic equilibrium
-
+    for i,P in enumerate(gas[atm.config.C['P']]):
+        if P>Pmax:
+            dP = P-gas[atm.config.C['P']][i-1]
+            P = gas[atm.config.C['P']][i-1]
+            T = gas[atm.config.C['T']][i-1]
+            cp = 0.0
+            for key in properties.specific_heat:
+                if key in atm.config.C:
+                    cp+=properties.specific_heat[key]*gas[atm.config.C[key]][i]
+            cp*=properties.R #since the catalogued values are Cp/R
+            dT = (properties.R*T)/(cp*P)*dP
+            gas[atm.config.C['T']][i] = T+dT
+            amu = 0.0
+            for key in properties.amu:
+                if key in atm.config.C:
+                    amu+=properties.amu[key]*gas[atm.config.C[key]][i]
+            g = gpar[0] + 2.0*properties.R*T*np.log(P/gpar[2])/(gpar[1]*amu)/1000.0
+            H = properties.R*T/(amu*g)/1000.0
+            dz = H*dP/P
+            gas[atm.config.C['Z']][i] = gas[atm.config.C['Z']][i-1]-dz
     #put in DZ
+    dz = np.diff(gas[atm.config.C['Z']])
+    gas[atm.config.C['DZ']] = np.append(dz,0.0)
+    return gas            
 
     #extrapolate out along last slope
     for yvar in atm.config.C:
