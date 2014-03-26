@@ -407,9 +407,7 @@ class atmosphere:
         return nAtm
 
     def computeProp(self,verbose=False):
-        """This module computes derived atmospheric properties:
-           amu = molecular weight [AMU]
-           refr = refractivity """
+        """This module computes derived atmospheric properties (makes self.layerProperty)"""
         self.layerProperty = []
         for op in self.config.LP:
             self.layerProperty.append([])

@@ -17,11 +17,9 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         3 - interpolating inward:  uses a dry adiabat
        It has two types:
         1 - use grid points in file
-            format: 'f name unit'
+            format: 'filename'
                 where
-                    'f' denotes a file
-                    'unit' is the unit in the file (bars, km)
-                    'name' is the name of the file
+                    'filename' is a file with the pressures in bars (increasing pressure)
         2 - provide step/range information, in one of two ways
             a - format:  'p/z step unit'
                     where
@@ -32,7 +30,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
                     where
                         'p/z states whether defined in pressure or altitude from reference pressure
                         'number' numbers of steps within range
-       Pmin/Pmax are optional for type 2 - defaults are min/max in gas
+       Pmin/Pmax are optional for type 2 (defaults are min/max in gas) and not used in type 1.
 
 
             
@@ -47,8 +45,6 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         Pmin/Pmax are optional - defaults are min/max in gas.
         Assumes that the gas range encompasses cloud range"""
 
-    print 'REGRID26:  Put in adiabatic interpolation'
-
     ### Determine regridType and parse string
     if regridType==None:
         regridType = atm.config.regridType
@@ -57,6 +53,8 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         return 0
     if string.lower(regridType) == 'auto' or string.lower(regridType) == 'default':
         regridType = 'z 1 km'
+
+
     regrid = regridType.split()
     regrid_using = string.upper(regrid[0])
     try:
@@ -64,67 +62,16 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     except IndexError:
         regrid_unit = '-'
     print '---regrid:  '+regridType
-    if regrid_using == 'F':
-        filename = os.path.join(atm.config.path,regrid[1])
-        try:
-            reg = open(filename,'r')
-        except IOError:
-            print "file '"+filename+"' not found - no regrid"
-            return 0
-        print '...interpolating on '+regrid_using+' from file '+filename
-        xs = []
-        for line in reg:
-            xs.append(float(line))
-        reg.close()
-        if regid_unit == 'km':
-            regrid_using = 'Z_file'
-            zgrid = xs
-            Pgrid = []
-        else:
-            regrid_using = 'P_file'
-            Pgrid = xs
-            zgrid = []
+    if len(regrid) == 1:
+        regrid_using = regrid[1]
+        Pgrid, zgrid = _procF_(atm,regrid_using)
     elif regrid_using == 'P':
-        if Pmin==None:
-            Pmin = min(atm.gas[atm.config.C['P']])
-        if Pmax==None:
-            Pmax = max(atm.gas[atm.config.C['P']])
-        if len(regrid)==2:
-            regrid_numsteps = int(regrid[1])
-            regrid_stepsize = (Pmax - Pmin)/regrid_numsteps
-        else:
-            regrid_stepsize = float(regrid[1])
-            regrid_numsteps = int( (Pmax-Pmin)/regrid_stepsize) + 1
-        regrid_using = 'P_compute'
-        zgrid = []
-        Pgrid = []
-        for i in range(regrid_numsteps):
-            Pgrid.append(Pmin + i*regrid_stepsize)
-        Pgrid = np.array(Pgrid)
+        Pgrid, zgrid = _procP_(atm,Pmin,Pmax,regrid[1],regrid_unit)
     elif regrid_using == 'Z':
-        zmin = None
-        zmax = None
-        if Pmin==None:
-            zmin = min(atm.gas[atm.config.C['Z']])
-        if Pmax==None:
-            zmax = max(atm.gas[atm.config.C['Z']])
-        if len(regrid)==2:
-            regrid_numsteps = int(regrid[1])
-            regrid_stepsize = None
-            if zmin and zmax:
-                regrid_stepsize = (zmax-zmin)/regrid_numsteps
-        else:
-            regrid_stepsize = float(regrid[1])
-            regrid_numsteps = None
-            if zmin and zmax:
-                regrid_numsteps = int( (zmax-zmin)/regrid_stepsize) + 1
-        regrid_using = 'Z_compute'
-        Pgrid = []
-        zgrid = []
-        if regrid_stepsize and regrid_numsteps:
-            for i in range(regrid_numsteps):
-                zgrid.append(zmin + i*regrid_stepsize)
-            zgrid = np.array(zgrid)
+        Pgrid, zbrid = _procZ_(atm,Pmin,Pmax,regrid[1],regrid_unit)
+
+
+
 
         
     if xvar == 'Z':### flip the array so that z is increasing so that interp works
@@ -212,10 +159,6 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     layerProperty = atm.layerProperty
     nPcs = atm.layerProperty.shape[0]
     atm.layerProperty = np.resize(atm.layerProperty,(nPcs,nAtm))
-
-    if loglin == 'LOG':
-        print 'LOG INTERPOLATION NOT YET SUPPORTED - NO REGRID'
-        return 0
     
     berr = False
     interpType = 'linear'
@@ -266,6 +209,78 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         atm.layerProperty = np.fliplr(atm.layerProperty)
     
     return 1
+
+def _procF_(atm,filename):
+    filename = os.path.join(atm.config.path,filename)
+    try:
+        reg = open(filename,'r')
+    except IOError:
+        print "file '"+filename+"' not found - no regrid"
+        return 0
+    print '...interpolating on '+regrid_using+' from file '+filename
+    Pgrid = []
+    for line in reg:
+        Pgrid.append(float(line))
+    reg.close()
+    Pgrid = np.array(Pgrid)
+    if not np.all(np.diff(Pgrid) > 0.0):
+        print 'Error in regrid:  P not increasing - flipping around and hoping for the best'
+        Pgrid = np.fliplr(Pgrid)
+    zgrid = None
+    return Pgrid, zgrid
+
+def _procP_(atm,Pmin,Pmax,data,regrid_unit):
+    zmin = None
+    zmax = None
+    if Pmin==None:
+        Pmin = min(atm.gas[atm.config.C['P']])
+        zmax = max(atm.gas[atm.config.C['Z']])
+    if Pmax==None:
+        Pmax = max(atm.gas[atm.config.C['P']])
+        zmin = min(atm.gas[atm.config.C['Z']])
+    if regrid_unit=='-':
+        regrid_numsteps = int(data)
+        regrid_stepsize = (Pmax - Pmin)/regrid_numsteps
+    else:
+        regrid_stepsize = float(data)
+        regrid_numsteps = int( (Pmax-Pmin)/regrid_stepsize) + 1
+    if zmin is None and zmax is None:
+        zgrid = None
+    else:
+        zgrid = [zmax,zmin]
+    Pgrid = []
+    for i in range(regrid_numsteps):
+        Pgrid.append(Pmin + i*regrid_stepsize)
+    Pgrid = np.array(Pgrid)
+    return Pgrid, zgrid
+
+def _procZ_(atm,Pmin,Pmax,data,regrid_unit):
+    zmin = None
+    zmax = None
+    if Pmin==None:
+        Pmin = min(atm.gas[atm.config.C['P']])
+        zmax = max(atm.gas[atm.config.C['Z']])
+    if Pmax==None:
+        Pmax = max(atm.gas[atm.config.C['P']])
+        zmin = min(atm.gas[atm.config.C['Z']])
+    if regrid_unit=='-':
+        regrid_numsteps = int(data)
+        regrid_stepsize = None
+        if zmin and zmax:
+            regrid_stepsize = (zmax-zmin)/regrid_numsteps
+    else:
+        regrid_stepsize = float(data)
+        regrid_numsteps = None
+        if zmin and zmax:
+            regrid_numsteps = int( (zmax-zmin)/regrid_stepsize) + 1
+    Pgrid = [Pmin,Pmax]
+    zgrid = None
+    if regrid_stepsize and regrid_numsteps:
+        for i in range(regrid_numsteps):
+            zgrid.append(zmax - i*regrid_stepsize)
+        zgrid = np.array(zgrid)
+    return Pgrid, zgrid
+
 
 
 def extrapolate(x,y,fillval):
