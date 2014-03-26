@@ -102,7 +102,6 @@ class brightness():
             Tbs = []
             ii = self.path.layer4ds[i]
             ii1= self.path.layer4ds[i+1]
-
             
             for j,f in enumerate(freqs):
                 if not alpha.config.Doppler:
@@ -149,7 +148,7 @@ class brightness():
             self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
             #self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
             plt.figure('radtran')
-            plt.subplot(121)
+            #plt.subplot(121)
             for i,f in enumerate(freqs):
                 #label=r'$\tau$: %.1f GHz' % (f)
                 #plt.semilogy(self.tau[i],self.P,label=label)
