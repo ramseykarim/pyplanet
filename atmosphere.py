@@ -22,7 +22,7 @@ import regrid
 planetDictionary = {'Jupiter':0,'Saturn':1,'Uranus':2,'Neptune':3}
 
 class atmosphere:
-    def __init__(self,planet,path=None,config=None,log=None,verbose=False,plot=True):
+    def __init__(self,planet,config='config.par',path=None,log=None,verbose=False,plot=True):
         """reads/computes atmospheres.  This should return:
                self.gas
                self.cloud
@@ -59,11 +59,12 @@ class atmosphere:
             utils.log(self.logFile,'\tAtmosphere file:  '+self.config.gasFile,True)
             utils.log(self.logFile,'\tCloud file:  '+self.config.cloudFile,True)
         if verbose:
-            print self.dispPar()
+            print self.config.show()
         # print '\tIf in interactive mode, change any parameters in setpar() before run()'
 
     def run(self,Pmin=None,Pmax=None,regridType=None,gasType=None,cloudType=None,otherType=None,tweak=True,plot=None,verbose=None):
         """This is the standard pipeline"""
+        ###Set run defaults
         if Pmin == None:
             Pmin = self.config.pmin
         if Pmax == None:
@@ -290,7 +291,8 @@ class atmosphere:
             monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
             print "Error in "+gasFile+".  Pressure not monotonically increasing"
-        self.gas[self.config.C['DZ']] = np.abs(np.append(np.diff(self.gas[self.config.C['Z']]),0.0))
+        dz = np.abs(np.diff(self.gas[self.config.C['Z']]))*1.0E5  #convert from km to cm (so no unit checking!!!)
+        self.gas[self.config.C['DZ']] = np.append(np.array([0.0]),dz)
         return self.nGas
 
     def writeGas(self,outputFile='gas.dat'):

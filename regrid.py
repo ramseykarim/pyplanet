@@ -103,6 +103,10 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         cloud[atm.config.Cl[yvar]] = fv(Pgrid)
     atm.cloud = cloud
 
+    #put in DZ
+    dz = np.abs(np.diff(gas[atm.config.C['Z']]))*1.0E5  #convert from km to cm (so no unit checking!!!)
+    gas[atm.config.C['DZ']] = np.append(np.array([0.0]),dz)
+
     atm.computeProp(False)
     print 'Regrid:  %d levels' % (nAtm)
     return 1
@@ -157,9 +161,6 @@ def extrapolate(gas,fillval,atm,gpar):
             H = properties.R*T/(amu*g)/1000.0
             dz = H*dP/P
             gas[atm.config.C['Z']][i] = gas[atm.config.C['Z']][i-1]-dz
-    #put in DZ
-    dz = np.diff(gas[atm.config.C['Z']])
-    gas[atm.config.C['DZ']] = np.append(dz,0.0)
     return gas            
 
     #extrapolate out along last slope
