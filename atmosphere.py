@@ -291,6 +291,15 @@ class atmosphere:
             monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
             print "Error in "+gasFile+".  Pressure not monotonically increasing"
+
+        ### Renormalize so that deepest z is 0
+        zDeep = self.gas[self.config.C['Z']][-1]
+        if abs(zDeep) > 1E-6:
+            for i in range(len(self.gas[self.config.C['Z']])):
+                self.gas[self.config.C['Z']][i]-=zDeep
+            print 'Deepest levels set from %.1f to 0' % (zDeep)
+
+        ### Set dz
         dz = np.abs(np.diff(self.gas[self.config.C['Z']]))*1.0E5  #convert from km to cm (so no unit checking!!!)
         self.gas[self.config.C['DZ']] = np.append(np.array([0.0]),dz)
         return self.nGas

@@ -103,6 +103,13 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         cloud[atm.config.Cl[yvar]] = fv(Pgrid)
     atm.cloud = cloud
 
+    #renormalize such that zDeep = 0.0
+    zDeep = atm.gas[atm.config.C['Z']][-1]
+    if abs(zDeep) > 1E-6:
+        for i in range(len(atm.gas[atm.config.C['Z']])):
+            atm.gas[atm.config.C['Z']][i]-=zDeep
+        print 'Deepest levels set from %.1f to 0' % (zDeep)
+
     #put in DZ
     dz = np.abs(np.diff(gas[atm.config.C['Z']]))*1.0E5  #convert from km to cm (so no unit checking!!!)
     gas[atm.config.C['DZ']] = np.append(np.array([0.0]),dz)
