@@ -121,12 +121,12 @@ class brightness():
                 
                 if discAverage==True:
                     Ws.append( 2.0*a1*ss.expn(2,taus[j]) )     # this is W_(i+1) for disc average
-                    dTb = ( T1*ss.expn(2,taus[j])/scriptR(T1,freqs[j]) + T0*ss.expn(2,self.tau[ii][j])/scriptR(T0,freqs[j]) )*dtau
-                    Tbs.append( self.Tb_lyr[i][j] + dTb )
+                #    dTb = ( T1*ss.expn(2,taus[j])/scriptR(T1,freqs[j]) + T0*ss.expn(2,self.tau[ii][j])/scriptR(T0,freqs[j]) )*dtau
+                #    Tbs.append( self.Tb_lyr[i][j] + dTb )
                 else:
                     Ws.append( a1*math.exp(-taus[j]) )                  # this is W_(i+1) for non disc average
-                    dTb = ( T1*Ws[j]/scriptR(T1,freqs[j]) + T0*self.W[ii][j]/scriptR(T0,freqs[j]) )*ds/2.0
-                    Tbs.append( self.Tb_lyr[i][j] + dTb)
+                dTb = ( T1*Ws[j]/scriptR(T1,freqs[j]) + T0*self.W[ii][j]/scriptR(T0,freqs[j]) )*ds/2.0
+                Tbs.append( self.Tb_lyr[i][j] + dTb)
 
                 
             self.tau.append(taus)

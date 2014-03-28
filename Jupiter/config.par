@@ -14,7 +14,7 @@ clouds Z T P SOLN H2O NH4SH NH3 H2S CH4 AR PH3 DZ
 otherfile none
 othertype compute
 tweakFile JupiterTweak
-regridtype z grid.dat
+regridtype z gridz.dat
 pmin none
 pmax none
 #
