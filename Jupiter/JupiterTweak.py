@@ -2,8 +2,6 @@ def modify(gas,cloud,C,Cl):
 
     comment = "Jupiter tweaking"
     
-    sol = 0.0
-    zSol = 0.0
     nAtm = len(gas[C['P']])
     for i in range(nAtm):
         Plyr = gas[C['P']][i]
@@ -23,14 +21,5 @@ def modify(gas,cloud,C,Cl):
         gas[C['HCN']][i] = 0.0
         gas[C['SOLN']][i] = 0.0
         gas[C['PH3']][i] = 0.0
-
-        ### compute dz and integrated solution cloud and solution cloud height
-        if i==0:
-            gas[C['DZ']][i] = 0.0
-        else:
-            gas[C['DZ']][i] = abs(gas[C['Z']][i]-gas[C['Z']][i-1])*1.0E5
-            sol+=gas[C['SOLN']][i]*gas[C['DZ']][i]
-            if gas[C['SOLN']][i] > 0.0:
-                zSol+=gas[C['DZ']][i]
 
     return comment, gas, cloud

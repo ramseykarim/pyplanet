@@ -21,12 +21,12 @@ class planet:
         """This is the 'executive function class to compute overall planetary emission
            Arguments here set defaults, however often get set specifically in run. See pyPlanet.pdf for documentation.
            Inputs:
-                name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune' or 'functions' if you just want to load without running
+                name:  'Jupiter', 'Saturn', 'Uranus', 'Neptune' [or 'functions' if you just want to load without running]
                 freqs: options are:
                     - int/float:  does that one frequency
                     - list of length 3:  assumes it is [start,stop,step]
                     - list not of length 3:   does those frequencies
-                b :  'impact parameter' b=1 is the radius of the maximum projected disc
+                b: 'impact parameter' b=1 is the radius of the maximum projected disc
                     - doublet list is one position, [0,0] is the center
                     - float will generate a grid at that spacing, may need to set blocks during run
                     - list of length > 2, assumes a line of those locations along the equator
@@ -84,8 +84,6 @@ class planet:
         ### Get config
         if config == 'manual' or config=='none':
             config = None
-        else:
-            config = os.path.join(self.planet,config)
         self.config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
 
         ### Create atmosphere:  outputs are self.atm.gas, self.atm.cloud and self.atm.layerProperty
@@ -121,7 +119,7 @@ class planet:
         #self.alpha.test(f=0,verbose=True,plot=True)
         self.log.flush()
 
-        ### Next compute radiometric properties
+        ### Next compute radiometric properties - initialize bright
         self.bright = bright.brightness(log=self.log,verbose=verbose,plot=plot)
         if not self.config.Doppler:
             self.bright.layerAbsorption(freqs,self.atm,self.alpha)
@@ -277,7 +275,7 @@ class planet:
                     pb.append([v,0.0])  ##...a line along the equator
             b = pb
         else:
-            if len(b) > 8:  ## I don't remember...
+            if len(b) > 8:  ###This does a sub-image but needs perfect square (9,16,25,...)
                 self.imRow = int(math.sqrt(len(b)))
         self.b = b
         if printOutb:

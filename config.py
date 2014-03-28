@@ -1,20 +1,38 @@
 import string
 import utils
+import os.path
 
 class planetConfig:
     def __init__(self,planet,configFile=None,path=None,log=None,verbose=False):
         """reads in config file"""
+
+
+        deprecated_toks = {'gastype':'gasType','cloudtype':'cloudType','othertype':'otherType','otherfile':'otherFile'}
+        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
+                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
+                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
+                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
+        toksFloat = {'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
+                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
+                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
+        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
+                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
+                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
+                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
+        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
+                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
+                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
+                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
         planet = string.capitalize(planet)
         self.planet = planet
         self.verbose=verbose
         self.logFile = utils.setupLogFile(log)
         print '\n---Reading config for %s---\n' % (planet)
-
-        """These are the config parameters (see self.configTokLists)"""
         if path:
-            self.path = os.path.join(path,planet)
+            self.path = path
         else:
             self.path = planet
+        configFile = os.path.join(self.path,configFile)
         self.gasFile = 'atmospheric constituent file - column order set by C'
         self.cloudFile = 'atmospheric cloud file - column order set by Cl'
         self.tweakFile = 'module that tweaks the read atmosphere'
@@ -22,10 +40,10 @@ class planetConfig:
         self.C  = {}  #This 'C'onstituent dictionary has atm layer gas data.   Needs to correspond to datafile if not computing.
         self.Cl = {}  #This 'Cl'oud dictionary has the cloud parameters.  Needs to correspond to datafile if not computing.
         self.LP = {}  #This 'lyr' dictionary has other atmospheric layer properties
-        self.gasType = "read vs compute -- normally read (currently can't compute)"
-        self.cloudType = "read vs compute -- normally read (currently can't compute)"
-        self.otherType = "read vs compute -- normally compute (currently can't read"
-        self.regridType = 'instructions or file to regrid data'
+        self.gasType = 'read'      #"read vs compute -- normally read (currently can't compute)"
+        self.cloudType = 'read'    #"read vs compute -- normally read (currently can't compute)"
+        self.otherType = 'compute' #"read vs compute -- normally compute (currently can't read)"
+        self.regridType = '1000'   # 'instructions or file to regrid data'
         self.h2state = 'hydrogen state e or n'
         self.pmin = None
         self.pmax = None
@@ -49,7 +67,7 @@ class planetConfig:
         self.ch4_p = 0.0
         self.Doppler = False
 
-        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6}
+        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6,'H':7,'LAPSE':8,'g':9}
         # Set defaults
         if planet=='Neptune':
             self.gasFile = 'neptune.paulCO_cloud21_fletcher_best_dry'
@@ -59,10 +77,7 @@ class planetConfig:
             self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
                       'PH3':11,'CO':12,'CO13':13,'HCN':14,'DZ':15}
             self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
-            self.gasType = 'read'        ### read vs compute
-            self.cloudType = 'read'      ###     "
-            self.otherType = 'compute'   ###     "
-            self.regridType = 'z grid.dat'
+            self.regridType = 'grid.dat'
             self.h2state = 'e'
             self.pmin = None
             self.pmax = None
@@ -86,10 +101,7 @@ class planetConfig:
             self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
                       'PH3':11,'CO':12, 'CO13':13,'HCN':14,'DZ':15}
             self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
-            self.gasType = 'read'       ### read vs compute
-            self.cloudType = 'read'     ###     "
-            self.otherType = 'compute'  ###     "
-            self.regridType = 'z lin 1.0 km'
+            self.regridType = 'grid.dat'
             self.h2state = 'e'
             self.pmin = None
             self.pmax = None
@@ -107,7 +119,7 @@ class planetConfig:
             self.Doppler = False
 
         self.setConfig(configFile)
-        pars = self.showConfig()
+        pars = self.show()
         utils.log(self.logFile,planet,False)
         utils.log(self.logFile,configFile,False)
         utils.log(self.logFile,pars,True)
@@ -129,15 +141,6 @@ class planetConfig:
             self.vwlat = [0.0,90.0]
             self.vwdat = [0.0,0.0]
 
-    def configTokLists(self):
-        self.ctl = ['path','gasfile','cloudfile','otherfile','constituents','clouds','gastype','cloudtype','othertype','tweakfile','regridtype','pmin','pmax',
-                    'omega','jn','gm','req','rpol','distance','rj','p_ref','zonal','gtype','orientation','h2state','doppler']
-        print 'These get read in at atmosphere.py:'
-        print self.ctl
-        self.atl = ['h2state','h2newset','water','ice','nh4sh','nh3ice','h2sice','doppler']
-        print 'These get read in at alpha.py'
-        print self.atl
-
     def setConfig(self,configFile):
         """Reads in config files and updates after default set in __init__.  These are all shown in showConfig"""
         if configFile == None:
@@ -150,6 +153,7 @@ class planetConfig:
             print configFile+' not found.  Using defaults.'
             return 0
         print 'Reading '+configFile
+
         for line in fp:
             validTok = True
             if line[0] in utils.commentChars or len(line)<4:
@@ -220,9 +224,9 @@ class planetConfig:
                     self.pmin = data[0]
             elif tok == 'omega':
                 try:
-                    self.omega = float(data[0])
+                    self.omega_m = float(data[0])
                 except:
-                    self.omega = data[0]
+                    self.omega_m = data[0]
             elif tok == 'jn':
                 try:
                     self.Jn = []
@@ -347,43 +351,12 @@ class planetConfig:
         fp.close()
         return nTokMod
 
-    def showConfig(self):
+    def show(self):
         """Displays configuration and returns string.  See __init__ and setConfig."""
         s = 'Run parameters:\n'
-        s+= '\tpath:  '+str(self.path)+'\n'
-        s+= '\tgasFile:  '+str(self.gasFile)+'\n'
-        s+= '\tcloudFile:  '+str(self.cloudFile)+'\n'
-        s+= '\ttweakFile:  '+str(self.tweakFile)+'\n'
-        s+= '\totherFile:  '+str(self.otherFile)+'\n'
-        s+= '\tC:  '+str(self.C)+'\n'
-        s+= '\tCl:  '+str(self.Cl)+'\n'
-        s+= '\tL:  '+str(self.LP)+'\n'
-        s+= '\tgasType:  '+str(self.gasType)+'\n'
-        s+= '\tcloudType:  '+str(self.cloudType)+'\n'
-        s+= '\totherType:  '+str(self.otherType)+'\n'
-        s+= '\tregridType:  '+str(self.regridType)+'\n'
-        s+= '\th2state:  '+str(self.h2state)+'\n'
-        s+= '\tpmin:  '+str(self.pmin)+'\n'
-        s+= '\tpmax:  '+str(self.pmax)+'\n'
-        s+= '\tdistance:  '+str(self.distance)+'\n'
-        s+= '\tp_ref:  '+str(self.p_ref)+'\n'
-        s+= '\tReq:  '+str(self.Req)+'\n'
-        s+= '\tRpol:  '+str(self.Rpol)+'\n'
-        s+= '\tgtype:  '+str(self.gtype)+'\n'
-        s+= '\torientation:  '+str(self.orientation)+'\n'
-        s+= '\tRJ:  '+str(self.RJ)+'\n'
-        s+= '\tGM_ref:  '+str(self.GM_ref)+'\n'
-        s+= '\tJn:  '+str(self.Jn)+'\n'
-        s+= '\tomega_m:  '+str(self.omega_m)+'\n'
-        s+= '\tzonal:  '+str(self.zonal)+'\n'
-        s+= '\th2state:  '+str(self.h2state)+'\n'
-        s+= '\tdoppler:  '+str(self.Doppler)+'\n'
-        s+= '\th2newset:  '+str(self.h2newset)+'\n'
-        s+= '\twater_p:  '+str(self.water_p)+'\n'
-        s+= '\tice_p:  '+str(self.ice_p)+'\n'
-        s+= '\tnh4sh_p:  '+str(self.nh4sh_p)+'\n'
-        s+= '\tnh3ice_p:  '+str(self.nh3ice_p)+'\n'
-        s+= '\th2sice_p:  '+str(self.h2sice_p)+'\n'
-        s+= '\tch4_p:  '+str(self.ch4_p)+'\n'
+        variables =  vars(self)
+        for key in variables:
+            s+='\t%s:  %s\n' %(key,str(variables[key]))
+        print 'CONFIG.PY:360 JUST TO REMIND HOW TO ACCESS VARIABLES ==>',self.__dict__['Doppler']
         return s
 

@@ -22,7 +22,7 @@ import regrid
 planetDictionary = {'Jupiter':0,'Saturn':1,'Uranus':2,'Neptune':3}
 
 class atmosphere:
-    def __init__(self,planet,path=None,config=None,log=None,verbose=False,plot=True):
+    def __init__(self,planet,config='config.par',path=None,log=None,verbose=False,plot=True):
         """reads/computes atmospheres.  This should return:
                self.gas
                self.cloud
@@ -59,11 +59,12 @@ class atmosphere:
             utils.log(self.logFile,'\tAtmosphere file:  '+self.config.gasFile,True)
             utils.log(self.logFile,'\tCloud file:  '+self.config.cloudFile,True)
         if verbose:
-            print self.dispPar()
+            print self.config.show()
         # print '\tIf in interactive mode, change any parameters in setpar() before run()'
 
     def run(self,Pmin=None,Pmax=None,regridType=None,gasType=None,cloudType=None,otherType=None,tweak=True,plot=None,verbose=None):
         """This is the standard pipeline"""
+        ###Set run defaults
         if Pmin == None:
             Pmin = self.config.pmin
         if Pmax == None:
@@ -104,7 +105,8 @@ class atmosphere:
             return 0
         else:
             self.propGen[otherType](verbose=verbose)
-        
+
+        ### Put onto common grid
         regridded = regrid.regrid(self,regridType=regridType,Pmin=Pmin,Pmax=Pmax)
         self.nAtm = len(self.gas[0])
 
@@ -119,10 +121,10 @@ class atmosphere:
             self.plotProp()
         return self.nAtm
 
-    def getval(self,val=None,vtype='all'):
+    def getval(self,val=None,vtype='gas'):
         """Returns one of the constituent or cloud profiles"""
         if val == None:
-            print "Usage:  getVal('v',['gas'/'cloud'/'other'/'all'])"
+            print "Usage:  getVal('v',['gas'/'cloud'/'other'])"
             print "    'gas' is default"
             print 'These are the gas values:'
             print self.config.C
@@ -136,17 +138,17 @@ class atmosphere:
         rv = 0
         found = False
         
-        if vt=='gas' or vt=='all':
+        if vt=='gas':
             if self.config.C.has_key(v):
                 rv = self.gas[self.config.C[v]]
                 print 'Found '+val+' in gas'
                 found = True
-        elif vt=='cloud' or vt=='all':
+        elif vt=='cloud':
             if self.config.Cl.has_key(v):
                 rv = self.cloud[self.config.Cl[v]]
                 print 'Found '+val+' in cloud'
                 found = True
-        elif vt=='other' or vt=='all':
+        elif vt=='other':
             if self.config.LP.has_key(v):
                 rv = self.layerProperty[self.config.LP[v]]
                 print 'Found '+val+' in layerProperty'
@@ -289,6 +291,8 @@ class atmosphere:
             monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
             print "Error in "+gasFile+".  Pressure not monotonically increasing"
+        dz = np.abs(np.diff(self.gas[self.config.C['Z']]))*1.0E5  #convert from km to cm (so no unit checking!!!)
+        self.gas[self.config.C['DZ']] = np.append(np.array([0.0]),dz)
         return self.nGas
 
     def writeGas(self,outputFile='gas.dat'):
@@ -360,6 +364,7 @@ class atmosphere:
             monotonic = np.all(np.diff(self.cloud[self.config.Cl['P']])>0.0)
         if not monotonic:
             print "Error in "+cloudFile+".  Pressure not monotonically increasing"
+        self.cloud[self.config.Cl['DZ']] = np.abs(np.append(np.diff(self.cloud[self.config.Cl['Z']]),0.0))
         return self.nCloud
 
     def readProp(self,otherFile=None,verbose=False):
@@ -407,9 +412,7 @@ class atmosphere:
         return nAtm
 
     def computeProp(self,verbose=False):
-        """This module computes derived atmospheric properties:
-           amu = molecular weight [AMU]
-           refr = refractivity """
+        """This module computes derived atmospheric properties (makes self.layerProperty)"""
         self.layerProperty = []
         for op in self.config.LP:
             self.layerProperty.append([])
@@ -433,38 +436,50 @@ class atmosphere:
             self.layerProperty[self.config.LP['Z']].append(zv)
             rr = z_at_p_ref + zv - zOffset
             self.layerProperty[self.config.LP['R']].append(rr)   # note that this is the "actual" z along equator  referenced to planet center (aka radius)
-            ###set amu
-            amutmp = properties.AMU_H2*self.gas[self.config.C['H2']][i]   + properties.AMU_He*self.gas[self.config.C['HE']][i]   + \
-                     properties.AMU_H2S*self.gas[self.config.C['H2S']][i] + properties.AMU_NH3*self.gas[self.config.C['NH3']][i] + \
-                     properties.AMU_H2O*self.gas[self.config.C['H2O']][i] + properties.AMU_CH4*self.gas[self.config.C['CH4']][i] + \
-                     properties.AMU_PH3*self.gas[self.config.C['PH3']][i]
-            self.layerProperty[self.config.LP['AMU']].append(amutmp)
-            ###set GM
+            ###set mean amu
+            amulyr = 0.0
+            for key in properties.amu:
+                if key in self.config.C:
+                    amulyr+=properties.amu[key]*self.gas[self.config.C[key]][i]
+            self.layerProperty[self.config.LP['AMU']].append(amulyr)
+            ###set GM pre-calc (normalized further down) and get lapse rate
             if not i:
                 self.layerProperty[self.config.LP['GM']].append(0.0)
+                self.layerProperty[self.config.LP['LAPSE']].append(0.0)
             else:
-                Gdm = self.layerProperty[self.config.LP['GM']][i-1] \
-                      + (1.0e11)*properties.GravConst*(4.0*math.pi*amutmp*P*abs(zv-self.gas[self.config.C['Z']][i-1])*rr**2) \
-                      / (properties.R*T)                  # in km3/s2
-                self.layerProperty[self.config.LP['GM']].append( Gdm )
-            ###set R
-            refrtmp = properties.REFR_H2*self.gas[self.config.C['H2']][i]      + properties.REFR_He*self.gas[self.config.C['HE']][i]   + \
-                      properties.REFR_H2S*self.gas[self.config.C['H2S']][i]    + properties.REFR_NH3*self.gas[self.config.C['NH3']][i] + \
-                      properties.REFR_H2O(T)*self.gas[self.config.C['H2O']][i] + properties.REFR_CH4*self.gas[self.config.C['CH4']][i] + \
-                      properties.REFR_PH3*self.gas[self.config.C['PH3']][i]
-            refrtmp*=P*(293.0/T)
-            self.layerProperty[self.config.LP['REFR']].append(refrtmp)
-            refrtmp = refrtmp/1.0E6 + 1.0
-            self.layerProperty[self.config.LP['N']].append(refrtmp)
-        GMnorm = self.layerProperty[self.config.LP['GM']][iOffset]
+                rho = (amulyr*P)/(properties.R*T)
+                dr = abs(zv - self.gas[self.config.C['Z']][i-1])
+                dV = 4.0*math.pi*(rr**2)*dr
+                dM = 1.0e11*rho*dV
+                GdM = self.layerProperty[self.config.LP['GM']][i-1] + properties.GravConst*dM    # in km3/s2
+                self.layerProperty[self.config.LP['GM']].append( GdM )  # mass added as you make way into atmosphere by radius r (times G)
+                dT = abs(T - self.gas[self.config.C['T']][i-1])
+                self.layerProperty[self.config.LP['LAPSE']].append(dT/dr)
+            ###set refractivity and index of refraction
+            refrlyr = 0.0
+            for key in properties.refractivity:
+                if key in self.config.C:
+                    refrlyr+=properties.refractivity[key]*self.gas[self.config.C[key]][i]
+            refrlyr = refrlyr*P*(293.0/T)
+            self.layerProperty[self.config.LP['REFR']].append(refrlyr)
+            nlyr = refrlyr/1.0E6 + 1.0
+            self.layerProperty[self.config.LP['N']].append(nlyr)
+ 
+        ###Now need to normalize GM to planet and calculate scale height (H)
+        GMnorm = self.layerProperty[self.config.LP['GM']][iOffset]  # G*(Mass added by p_ref)
         for i, mv in enumerate(self.layerProperty[self.config.LP['GM']]):
             gm = self.config.GM_ref - (mv-GMnorm)
             self.layerProperty[self.config.LP['GM']][i] = gm
+            little_g = gm/self.layerProperty[self.config.LP['R']][i]**2
+            m_bar = self.layerProperty[self.config.LP['AMU']][i]
+            T = self.gas[self.config.C['T']][i]
+            self.layerProperty[self.config.LP['H']].append( (properties.R*T)/(little_g*m_bar)/1000.0 )
+            self.layerProperty[self.config.LP['g']].append( little_g )
         self.layerProperty = np.array(self.layerProperty)
             
     def computeCloud(self,verbose=False):
         """This computes cloud stuff"""
-        print 'computeCloud oes nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
+        print 'computeCloud does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
     def computeGas(self,verbose=False):
         """Computes an atmosphere given stuff"""
         print 'computeGas does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'

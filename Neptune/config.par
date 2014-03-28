@@ -3,18 +3,14 @@
 # Order doesn't matter but the last one read will be in effect.  
 # Parameters not included take the hard-coded default value
 ### gas data
-gastype read
 gasfile neptune.paulCO_cloud21_fletcher_best_wet_30S
 constituents Z T P H2 HE CH4 NH3 H2O H2S SOLN OTHER PH3 CO CO13 HCN DZ
 ### cloud data
-cloudtype read
 cloudfile nepcloud_CO.cloud21_fletcher_best_wet_30S
 clouds Z T P SOLN H2O NH4SH NH3 H2S CH4 AR PH3 DZ
-### other data, tweak and regrid
-otherfile none
-othertype compute
+### tweak and regrid
 tweakfile NeptuneTweak
-regridtype z grid.dat
+regridtype 1500
 pmin none
 pmax none
 #
