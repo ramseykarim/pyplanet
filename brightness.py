@@ -145,7 +145,7 @@ class brightness():
         if plot:
             # save a local copy of
             self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
-            #self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
+            self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
             plt.figure('radtran')
             #plt.subplot(121)
             for i,f in enumerate(freqs):

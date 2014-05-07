@@ -292,6 +292,9 @@ class planet:
         global header
         header['freqs'] = '# freqs request: '+str(freqs)+' '+freqUnit+'\n'
         ### Process frequency range "request"
+        if type(freqs)==str:
+            freqs = np.loadtxt(freqs)
+            freqs = list(freqs)
         if type(freqs) != list:
             freqs = [freqs]
         elif len(freqs)==3:
