@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import atmosphere
 import numpy as np
 import sys
-import mayavi.mlab as mlab
+USE_MAYAVI = False
+if USE_MAYAVI:
+    import mayavi.mlab as mlab
 import shape
 
 raypathdir = {'egress':-1, 'ingress':1, 'tangent':0}
@@ -18,21 +20,24 @@ zHat = np.array([0.0,0.0,1.0])
 plotExist = False
 
 class Ray:
-    def __init__(self,ds=None,layer4ds=None,r4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
+    def __init__(self,ds=None,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
         self.ds = ds
         self.layer4ds = layer4ds
         self.r4ds = r4ds
+        self.P4ds = P4ds
         self.rNorm = rNorm
         self.tip = tip
         self.rotate = rotate
         self.doppler = doppler
-    def update(self,ds=None,layer4ds=None,r4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
+    def update(self,ds=None,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
         if ds != None:
             self.ds = ds
         if layer4ds != None:
             self.layer4ds = layer4ds
         if r4ds != None:
             self.r4ds = r4ds
+        if P4ds != None:
+            self.P4ds = P4ds
         if rNorm != None:
             self.rNorm = rNorm
         if tip != None:
@@ -115,6 +120,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
     req = atm.layerProperty[atm.config.LP['R']]   # radius of layers along equator
     rNorm = req[0]
     nr = atm.layerProperty[atm.config.LP['N']]    # refractive index of layers
+    P = atm.gas[atm.config.C['P']]
     # projected viewing
     if b_type != 'xy':
         sigma = b[1]*math.pi/180.0
@@ -157,6 +163,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
     ds = [0.0]
     layer4ds = [0.0]
     r4ds = [0.0]  # not needed, but for information
+    P4ds = [0.0]  # not needed, but for information
     doppler = []
 
     # loop while in atmosphere
@@ -213,6 +220,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
         ds.append(ds_step)
         layer4ds.append(layer)
         r4ds.append(rNowMag)
+        P4ds.append(atm.gas[atm.config.C['P']][layer])
         doppler.append(dopp)
         
         rnext = r[i] + ds[i+1]*s[i+1]
@@ -251,11 +259,11 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
         ### end loop ###
 
     # Get rid of the first entry, which was just used to make indexing in loop consistent
-    del ds[0], layer4ds[0], r4ds[0]
-    path.update(ds=ds,layer4ds=layer4ds,r4ds=r4ds,doppler=doppler,tip=tip,rotate=rotate,rNorm=rNorm)
+    del ds[0], layer4ds[0], r4ds[0], P4ds[0]
+    path.update(ds=ds,layer4ds=layer4ds,r4ds=r4ds,P4ds=P4ds,doppler=doppler,tip=tip,rotate=rotate,rNorm=rNorm)
     if plot:
         plotStuff(r=np.array(r),ray=path)
-    del s, r, n, ds, layer4ds, r4ds, geoid, req, nr
+    del s, r, n, ds, layer4ds, r4ds, P4ds,geoid, req, nr
     return path
 
 def plotStuff(atm=None,r=None,b=None,gtype=None,delta_lng=None,geoid=None,ray=None,tip=None,rotate=None):
@@ -269,12 +277,14 @@ def plotStuff(atm=None,r=None,b=None,gtype=None,delta_lng=None,geoid=None,ray=No
             _r[0] = edge
             edge, b_tmp = __findEdge__(atm,[0.1,0.0],1.005*r,tip,rotate,gtype)
             _r[1] = edge
-            mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0,0,1),tube_radius=250.0)
+            if USE_MAYAVI:
+                mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0,0,1),tube_radius=250.0)
             edge, b_tmp = __findEdge__(atm,[0.0,-0.05],1.005*r,tip,rotate,gtype)
             _r[0] = edge
             edge, b_tmp = __findEdge__(atm,[0.0,0.05],1.005*r,tip,rotate,gtype)
             _r[1] = edge
-            mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0.96,1.0,0.04),tube_radius=250.0)
+            if USE_MAYAVI:
+                mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0.96,1.0,0.04),tube_radius=250.0)
             #shape.plotMethods(atm,r,delta_lng=delta_lng,gtypes=[gtype])
             shape.plotMethods(atm,r,delta_lng=0.0,gtypes=[gtype],color='g')
             shape.plotMethods(atm,r,delta_lng=90.0,gtypes=[gtype],color='k')
@@ -287,22 +297,29 @@ def plotStuff(atm=None,r=None,b=None,gtype=None,delta_lng=None,geoid=None,ray=No
                 _x.append(r*np.cos(t))
                 _z.append(r*np.sin(t))
                 _y.append(0.0)
-            mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
+            if USE_MAYAVI:
+                mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
             _x = []; _y = []; _z = []
             for t in theta:
                 _x.append((r/10.0)*np.cos(t))
                 _z.append((r/10.0)*np.sin(t))
                 _y.append(r*1.2)
-            mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
+            if USE_MAYAVI:
+                mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
             _x = [0.0,0.0]; _y = [-1.5*r,1.5*r]; _z = [0.0,0.0]
-            mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
+            if USE_MAYAVI:
+                mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
             del _x, _y, _z, _r
         plt.figure('observer')
         plt.plot(r*b[0],r*b[1],'.',color='k')
     else:
-        mlab.plot3d(r[:,_X],r[:,_Y],r[:,_Z],color=(1,0,0),tube_radius=150)
-        plt.figure('raypath')
+        if USE_MAYAVI:
+            mlab.plot3d(r[:,_X],r[:,_Y],r[:,_Z],color=(1,0,0),tube_radius=150)
+        plt.figure('raypath-r')
         plt.plot(ray.r4ds, ray.ds)
+        plt.figure('raypath-P')
+        plt.semilogy(ray.ds,ray.P4ds)
+        plt.axis(ymin = ray.P4ds[-1],ymax=ray.P4ds[0])
         #-debug-#plt.plot(ray.r4ds, ray.layer4ds)
 
 ###Test functions

@@ -3,7 +3,9 @@ import math
 import scipy.special as scisp
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
-import mayavi.mlab as mlab
+USE_MAYAVI = False
+if USE_MAYAVI:
+    import mayavi.mlab as mlab
 import atmosphere
 import string
 _X = 0
@@ -291,7 +293,8 @@ class Shape:
                 #-debug-#except ValueError:
                 #-debug-#    _g.append( 0.0 )
             colorm = clr.colorConverter.to_rgb(color)
-            mlab.plot3d(_x,_y,_z,color=colorm,opacity=0.5,tube_radius=250)
+            if USE_MAYAVI:
+                mlab.plot3d(_x,_y,_z,color=colorm,opacity=0.5,tube_radius=250)
             #-debug-#s = 'test'+string.capitalize(gtype)+'.out'
             #-debug-#fp = open(s,'w')
             #-debug-#for i in range(len(_x)):

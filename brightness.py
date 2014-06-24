@@ -146,6 +146,7 @@ class brightness():
             # save a local copy of
             self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
             self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
+            #####-----Weigthing functions
             plt.figure('radtran')
             #plt.subplot(121)
             for i,f in enumerate(freqs):
@@ -168,6 +169,24 @@ class brightness():
             #plt.legend()
             #plt.xlabel('units')
             plt.ylabel('P [bars]')
+            #####-----Alpha
+            plt.figure('alpha')
+            for i,f in enumerate(freqs):
+                label=r'$\alpha$: %.1f GHz' % (f)
+                label=r'%.1f cm' % (30.0/f)
+                pl = list(self.layerAlpha[i])
+                del pl[0]
+                print 'Why do I have to delete a layerAlpha element?  [brightness:L180]'
+                plt.semilogy(pl,self.P,label=label)
+            plt.legend()
+            v = list(plt.axis())
+            v[2] = 100.0*math.ceil(self.P[-1]/100.0)
+            v[3] = 1.0E-7*math.ceil(self.P[0]/1E-7)
+            plt.axis(v)
+            #plt.legend()
+            #plt.xlabel('units')
+            plt.ylabel('P [bars]')
+            #####-----Brightness temperature
             plt.figure('brightness')
             lt = '-'
             if (len(self.Tb)==1):
