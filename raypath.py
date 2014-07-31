@@ -108,12 +108,14 @@ def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=True):
     del zQ_Trial, pclat_zQ_Trial, r_zQ_Trial, r_pclat_zQ_Trial, geoid, xx, yy
     return edge, b  # same vector but in P and Q coordinate systems
 
-def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=False, plot=True):
+def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     """Computes the path length through the atmosphere given:
             b = impact parameter (fractional distance to outer edge at that latitude in observer's coordinates)
             orientation = position angle of the planet [0]='tip', [1]='subearth latitude' """
     if gtype==None:
         gtype = atm.config.gtype
+    if gtype == 'gravity':
+        verbose = True
     if orientation == None:
         orientation = atm.config.orientation
     path = Ray()
@@ -121,10 +123,6 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
     rNorm = req[0]
     nr = atm.layerProperty[atm.config.LP['N']]    # refractive index of layers
     P = atm.gas[atm.config.C['P']]
-    # projected viewing
-    if b_type != 'xy':
-        sigma = b[1]*math.pi/180.0
-        b = [b[0]*math.cos(sigma), b[0]*math.sin(sigma)]
     if (b[0]**2 + b[1]**2) > 1.0:
         return path
 
@@ -183,7 +181,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
         rNowMag = geoid.rmag
         #---#rScale = rNowMag/req[layer]
         #---#rNextMag= req[layer+raypathdir[direction]] * rScale
-        rNextMag = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng,plot3d=False)
+        rNextMag = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng)
         rdots = np.dot( r[i],s[i+1] )
 
         vw = np.interp(pclat,atm.config.vwlat,atm.config.vwdat)/1000.0
@@ -212,7 +210,7 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
                 break
         if ds_step < 0.0:
             if direction != 'egress':
-                print 'Error:  ds < 0  (%s:  r.s=%f, ds=%f)' % (direction,rdots,ds_step)
+                print 'Error:  ds < 0  (%s:  r.s=%f, ds=%f, [%f,%f])' % (direction,rdots,ds_step,dsp,dsm)
             inAtmosphere = False
             break
 
@@ -222,16 +220,18 @@ def compute_ds(atm, b, orientation=None, b_type = 'xy', gtype=None, verbose=Fals
         r4ds.append(rNowMag)
         P4ds.append(atm.gas[atm.config.C['P']][layer])
         doppler.append(dopp)
-        
+
+        # get next step, double-check r value (and compute n, etc)
         rnext = r[i] + ds[i+1]*s[i+1]
         pclat = (180.0/math.pi)*math.asin( np.dot(rnext,yHat)/np.linalg.norm(rnext) )
         delta_lng = (180.0/math.pi)*math.atan2( np.dot(rnext,xHat), np.dot(rnext,zHat) )
-        r2 = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng,plot3d=False)
+        r2 = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng)
         if abs(r2-rNextMag) > 10.0:
-            print 'Warning:  %f != %f (%f)' % (r2,rNextMag,geoid.rmag)
-        r.append( rnext )  # which is also geoid.r 
+            print 'Warning:  %f != %f' % (r2,rNextMag)
+        r.append( rnext )  # which is also geoid.r, or should be 
         n.append( geoid.n )
-        
+
+        # get new incident angle
         layer+=raypathdir[direction]
         if direction=='tangent':
             direction = 'egress'
@@ -270,46 +270,42 @@ def plotStuff(atm=None,r=None,b=None,gtype=None,delta_lng=None,geoid=None,ray=No
     global plotExist
     if ray == None:
         if not plotExist:
-            print 'Generating 3-D plot'
+            print 'Generating plots'
             plotExist = True
-            _r = np.zeros( (2,3) )
-            edge, b_tmp = __findEdge__(atm,[-0.1,0.0],1.005*r,tip,rotate,gtype)
-            _r[0] = edge
-            edge, b_tmp = __findEdge__(atm,[0.1,0.0],1.005*r,tip,rotate,gtype)
-            _r[1] = edge
-            if USE_MAYAVI:
+            if USE_MAYAVI:  ###For now just block everything out if not using MAYAVI
+                _r = np.zeros( (2,3) )
+                edge, b_tmp = __findEdge__(atm,[-0.1,0.0],1.005*r,tip,rotate,gtype)
+                _r[0] = edge
+                edge, b_tmp = __findEdge__(atm,[0.1,0.0],1.005*r,tip,rotate,gtype)
+                _r[1] = edge
                 mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0,0,1),tube_radius=250.0)
-            edge, b_tmp = __findEdge__(atm,[0.0,-0.05],1.005*r,tip,rotate,gtype)
-            _r[0] = edge
-            edge, b_tmp = __findEdge__(atm,[0.0,0.05],1.005*r,tip,rotate,gtype)
-            _r[1] = edge
-            if USE_MAYAVI:
+                edge, b_tmp = __findEdge__(atm,[0.0,-0.05],1.005*r,tip,rotate,gtype)
+                _r[0] = edge
+                edge, b_tmp = __findEdge__(atm,[0.0,0.05],1.005*r,tip,rotate,gtype)
+                _r[1] = edge
                 mlab.plot3d(_r[:,_X],_r[:,_Y],_r[:,_Z], color=(0.96,1.0,0.04),tube_radius=250.0)
-            #shape.plotMethods(atm,r,delta_lng=delta_lng,gtypes=[gtype])
-            shape.plotMethods(atm,r,delta_lng=0.0,gtypes=[gtype],color='g')
-            shape.plotMethods(atm,r,delta_lng=90.0,gtypes=[gtype],color='k')
-            shape.plotMethods(atm,r,delta_lng=180.0,gtypes=[gtype],color='k')
-            shape.plotMethods(atm,r,delta_lng=270.0,gtypes=[gtype],color='k')
-            # plot equator, axis and northern 'halo'
-            _x = []; _y = []; _z = []
-            theta = np.arange(0.0,2.0*np.pi,0.001)
-            for t in theta:
-                _x.append(r*np.cos(t))
-                _z.append(r*np.sin(t))
-                _y.append(0.0)
-            if USE_MAYAVI:
+                #shape.plotMethods(atm,r,delta_lng=delta_lng,gtypes=[gtype])
+                #-#shape.plotMethods(atm,r,delta_lng=0.0,gtypes=[gtype],color='g')
+                #-#shape.plotMethods(atm,r,delta_lng=90.0,gtypes=[gtype],color='k')
+                #-#shape.plotMethods(atm,r,delta_lng=180.0,gtypes=[gtype],color='k')
+                #-#shape.plotMethods(atm,r,delta_lng=270.0,gtypes=[gtype],color='k')
+                # plot equator, axis and northern 'halo'
+                _x = []; _y = []; _z = []
+                theta = np.arange(0.0,2.0*np.pi,0.001)
+                for t in theta:
+                    _x.append(r*np.cos(t))
+                    _z.append(r*np.sin(t))
+                    _y.append(0.0)
                 mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
-            _x = []; _y = []; _z = []
-            for t in theta:
-                _x.append((r/10.0)*np.cos(t))
-                _z.append((r/10.0)*np.sin(t))
-                _y.append(r*1.2)
-            if USE_MAYAVI:
+                _x = []; _y = []; _z = []
+                for t in theta:
+                    _x.append((r/10.0)*np.cos(t))
+                    _z.append((r/10.0)*np.sin(t))
+                    _y.append(r*1.2)
                 mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
-            _x = [0.0,0.0]; _y = [-1.5*r,1.5*r]; _z = [0.0,0.0]
-            if USE_MAYAVI:
+                _x = [0.0,0.0]; _y = [-1.5*r,1.5*r]; _z = [0.0,0.0]
                 mlab.plot3d(_x,_y,_z,color=(0,0,0),opacity=0.5,tube_radius=250)
-            del _x, _y, _z, _r
+                del _x, _y, _z, _r
         plt.figure('observer')
         plt.plot(r*b[0],r*b[1],'.',color='k')
     else:
@@ -324,7 +320,7 @@ def plotStuff(atm=None,r=None,b=None,gtype=None,delta_lng=None,geoid=None,ray=No
 
 ###Test functions
 def refractTest(layers):
-    """Refurns refractive index at layers"""
+    """Returns fake refractive index at layers"""
     n = [1.0]
     n = []
     for r in layers:

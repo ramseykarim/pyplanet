@@ -3,9 +3,6 @@ import math
 import scipy.special as scisp
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
-USE_MAYAVI = False
-if USE_MAYAVI:
-    import mayavi.mlab as mlab
 import atmosphere
 import string
 _X = 0
@@ -14,8 +11,8 @@ _Z = 2
 
 class Shape:
     """Calculates radius and normal to planet.  Types are:
-            gravity, reference, sphere, ellipse"""
-    def __init__(self, gtype = 'reference'):
+            gravity, reference, sphere/circle, ellipse"""
+    def __init__(self, gtype = 'ellipse'):
         self.gtype = gtype
         self.gamma = 0.0
         self.pclat = 0.0
@@ -29,10 +26,12 @@ class Shape:
         self.g = []
         self.gmag = 0.0
         self.g_static = 0.0
-        self.default_latstep = 0.05
+        self.default_gravcalc_latstep = 0.01 #it needs to be this small to be accurate, but then the gravity calc is too slow
         self.referenceGeoid = False
         self.referenceRadius = 0.0
-        self.referenceDecimate = 10
+        self.calcCounter = 0
+        self.colorCounter = 0
+        self.saveShape = False  #This is the one concession to get a gravity profile without looping many times...so fake it for ellipse
     def __str__(self):
         s = '-------------------------Geoid---------------------------\n'
         s+= 'type:  %s, gamma = %.2f deg, lat = %.2f deg, lng = %.2f\n' % (self.gtype,self.gamma*180.0/np.pi, self.pclat*180.0/np.pi, self.delta_lng*180.0/np.pi)
@@ -53,42 +52,36 @@ class Shape:
         return s
 
     ###------------------------------------General handling function----------------------------------------
-    def calcShape(self, planet, r, pclat=90.0, delta_lng=0.0, direction=1.0, gtype=None, plot3d=False, latstep='default', color='k'):
+    def calcShape(self, planet, r, pclat=90.0, delta_lng=0.0, gtype=None, latstep='default'):
+
+        #set/reset gtype and latstep (ellipse doesn't need latstep)
         if gtype == None:
             gtype = self.gtype
+        self.gtype = gtype
+        if type(latstep) == str:
+            self.gravcalc_latstep = self.default_gravcalc_latstep
+        else:
+            self.gravcalc_latstep = float(latstep)
+            
         if gtype == 'gravity':
-            r = self.calcGeoid(planet, r, pclat=pclat, delta_lng=delta_lng, plot3d=plot3d, latstep=latstep)
+            r = self.__calcGeoid(        planet, r, pclat=pclat, delta_lng=delta_lng)
         elif gtype == 'reference':
-            r = self.calcFromReference(planet, r, pclat=pclat, delta_lng=delta_lng, plot3d=plot3d, latstep=latstep)
-        elif gtype == 'sphere':
-            r = self.calcEllipse(planet, r, pclat=pclat, delta_lng=delta_lng, gtype=gtype, plot3d=plot3d, color=color)
-        elif gtype == 'ellipse':
-            r = self.calcEllipse(planet, r, pclat=pclat, delta_lng=delta_lng, gtype=gtype, plot3d=plot3d, color=color)
+            r = self.__calcFromReference(planet, r, pclat=pclat, delta_lng=delta_lng)
+        elif gtype == 'ellipse' or gtype == 'circle' or gtype == 'sphere':
+            r = self.__calcEllipse(      planet, r, pclat=pclat, delta_lng=delta_lng)
         else:
             print gtype+' not a valid planet shape'
             r = None
         return r
     
     ###---------------------Below are the specific shape handlers----------------------
-    ###'reference' - fits a geoid at the reference pressure and scales
-    def calcFromReference(self, planet, r, pclat=90.0, delta_lng=0.0, direction=1.0, plot3d=False, latstep='default',color='k'):
-        print 'Need to fix plot etc and add direction!!!!'
+    ###'reference' - fits a geoid at the reference pressure and scales from there
+    def __calcFromReference(self, planet, r, pclat=90.0, delta_lng=0.0):
         if type(self.referenceGeoid) == bool:
             print 'Calculating reference geoid at P_ref=%f' % (planet.config.p_ref)
             self.referenceRadius=planet.config.Req
-            self.calcGeoid(planet,planet.config.Req,-90,0.0,plot3d=False,latstep=latstep)
-            tmp = []
-            for i in range(len(self.referenceList)):
-                if not i%self.referenceDecimate:
-                    tmp.append(self.referenceList[i])
-            self.referenceGeoid = np.flipud(np.array(tmp))
-            self.calcGeoid(planet,planet.config.Req,90,0.0,plot3d=False,latstep=latstep)
-            tmp = []
-            for i in range(len(self.referenceList)):
-                if not i%self.referenceDecimate:
-                    tmp.append(self.referenceList[i])
-            del tmp[0] 
-            self.referenceGeoid = np.vstack( (self.referenceGeoid,np.array(tmp)) )
+            self.__calcGeoid(planet,planet.config.Req,90,0.0)
+            self.referenceGeoid = np.array(self.referenceGeoid)
         rlat  = np.interp(pclat,self.referenceGeoid[:,0],self.referenceGeoid[:,1]) * (r/self.referenceRadius)
         gamma = np.interp(pclat,self.referenceGeoid[:,0],self.referenceGeoid[:,2])
 
@@ -111,44 +104,30 @@ class Shape:
         self.g = [0.0,0.0]
         self.gmag = 0.0
 
-        if plot3d:
-            _x = []; _y = []; _z = []; _p = []; _r = []; _g = []
-            for i,vlat in enumerate(self.referenceGeoid[:,0]):
-                lat = (np.pi/180.0)*vlat
-                r_vec = self.referenceGeoid[i,1] * (r/self.referenceRadius)*np.array([0.0, math.sin(lat), math.cos(lat)])
-                r_vec = rotY(lng,r_vec)
-                _x.append(r_vec[_X])
-                _y.append(r_vec[_Y])
-                _z.append(r_vec[_Z])
-                #-debug-#_p.append(vlat)
-                #-debug-#_r.append(np.linalg.norm(r_vec))
-                #-debug-#_g.append(self.referenceGeoid[i,2])
-            print ' need to change over to mlab... '
-            #-debug-#fp = open('testReference.out','w')
-            #-debug-#for i in range(len(_x)):
-            #-debug-#    s = '%f\t%f\t%f\t%f\t%f\t%f\n' % (_x[i],_y[i],_z[i],_p[i],_r[i],_g[i])
-            #-debug-#    fp.write(s)
-            #-debug-#fp.close()
-            del _x, _y, _z, _p, _r, _g
+        if self.saveShape:  #This is here to fake saveShape to act like __calcGeoid
+            plot_latstep = 0.1  # can't be as small as gravcalc since too many recursions
+            self.saveShape.append(list(self.r))
+            pclat-=plot_latstep
+            if pclat > 0.0:
+                self.__calcFromReference(planet,r,pclat,delta_lng)
         return self.rmag
 
+
     ###'gravity' - does the full thing, but is very time-consuming
-    def calcGeoid(self, planet, r, pclat=90.0, delta_lng=0.0, direction=1.0, plot3d=False, latstep='default',color='k'):
+    def __calcGeoid(self, planet, r, pclat, delta_lng):
         """Starts at equatorial radius and moves north or south to compute geoid at pclat"""
-        print 'Need to fix plot etc and add direction!!!!'
-        if plot3d:
-            _x = []; _y = []; _z = []; _p = []; _r = []; _g = []
-        if type(latstep) == str:
-            latstep = self.default_latstep
+        self.calcCounter+=1
+        print 'Geoid calc counter: ',self.calcCounter
+
         if pclat == 0.0:
             nsp = 1.0
         else:
             nsp = np.sign(pclat)
-        latstep = nsp*latstep
+        latstep = nsp*self.gravcalc_latstep
         pclatSteps = np.arange(0.0,pclat+latstep,latstep)
 
-        if self.gtype == 'reference':
-            self.referenceList = []
+        if self.gtype == 'reference' and type(self.referenceGeoid) == bool:
+            self.referenceGeoid = []
 
         GM = np.interp(r,planet.layerProperty[planet.config.LP['R']],planet.layerProperty[planet.config.LP['GM']])
         for latv in pclatSteps:
@@ -156,28 +135,14 @@ class Shape:
             vw = np.interp(latv,planet.config.vwlat,planet.config.vwdat)/1000.0
             self.omega = planet.config.omega_m + vw/(r*np.cos(radlatv))
             self.__gravity__(latv, delta_lng, r, GM, self.omega, planet.config.Jn, planet.config.RJ)
-            if plot3d:
-                _x.append(self.r[_X])
-                _y.append(self.r[_Y])
-                _z.append(self.r[_Z])
-                #-debug-#_p.append(latv)
-                #-debug-#_r.append(self.rmag)
-                #-debug-#_g.append(self.gamma)
             dlat = latstep*np.pi/180.0
             dr_vec = r*dlat*self.t
             r_vec = self.r+dr_vec
             r = np.linalg.norm(r_vec)
             if self.gtype == 'reference':
-                self.referenceList.append([latv,r,self.gamma])
-        if plot3d:
-            print 'need to change over to mlab...'
-            #-debug-#for i in range(len(_x)):
-            #-debug-#    fp = open('testGeoid.out','w')
-            #-debug-#    for i in range(len(_x)):
-            #-debug-#        s = '%f\t%f\t%f\t%f\t%f\t%f\n' % (_x[i],_y[i],_z[i],_p[i],_r[i],_g[i])
-            #-debug-#        fp.write(s)
-            #-debug-#    fp.close()
-            del _x, _y, _z, _p, _r, _g
+                self.referenceGeoid.append([latv,r,self.gamma])
+            if self.saveShape:
+                self.saveShape.append(list(self.r))
         del pclatSteps
         return self.rmag
     def __gravity__(self, pclat, delta_lng, r, GM, omega, Jn, RJ):
@@ -227,10 +192,10 @@ class Shape:
         self.g = [gr,gp]
         self.gmag = gt
 
-    ### 'ellipse' or 'circle' - simply does the equivalent ellipse or circle
-    def calcEllipse(self, planet, r, pclat, delta_lng, direction=1.0, gtype='ellipse', plot3d=False, color='k'):
+    ### 'ellipse' or 'circle' or 'sphere' - simply does the equivalent ellipse or circle
+    def __calcEllipse(self, planet, r, pclat, delta_lng):
         a = r
-        if gtype=='ellipse':
+        if self.gtype=='ellipse':
             b = (planet.config.Rpol/planet.config.Req)*r
         else:
             b = r
@@ -238,7 +203,7 @@ class Shape:
         lng = delta_lng*np.pi/180.0
         if lat == 0.0:
             nsl = 1.0
-            lat=1.0E-6   ###WHY????!!!!  This [largely] fixes the ValueError on gamma below
+            lat=1.0E-6   ###WHY DO I NEED TO DO THIS????!!!!  Empirical answer is that this [largely] fixes the ValueError on gamma below
         else:
             nsl = np.sign(lat)
 
@@ -258,7 +223,7 @@ class Shape:
         except ValueError:
             arg = np.dot(r_vec,norm)/self.rmag
             #print norm,np.linalg.norm(norm),r_vec,self.rmag
-            print 'gamma error:  [%f,%f,%f,%f,%f]' % (arg,a,b,pclat,delta_lng),
+            print 'gamma warning (%s):  [%.2f,%.2f,%.2f,%.2f]' % (self.gtype,arg,a,b,pclat),
             print '...but proceeding anyway by setting gamma=0.0'
             self.gamma = 0.0
         self.pclat = lat
@@ -270,53 +235,36 @@ class Shape:
         self.g = [self.g_static,self.g_static]
         self.gmag = self.g_static
 
-        if plot3d:
-            _x = []; _y = []; _z = []; _p = []; _r = []; _g = []
-            lat = abs(pclat)
-            latstep = 0.1
-            for vlat in np.arange(-lat,lat+latstep,latstep):
-                nsl=1.0
-                if vlat<0.0:
-                    nsl=-1.0
-                r_vec = np.array([0.0, b*math.sin(vlat*np.pi/180.0), a*math.cos(vlat*np.pi/180.0)])
-                r_vec = rotY(lng,r_vec)
-                norm = np.array([0.0,  a*math.sin(vlat*np.pi/180.0), b*math.cos(vlat*np.pi/180.0)])
-                norm = norm/np.linalg.norm(norm)
-                norm = rotY(lng,norm)
-                _x.append(r_vec[_X])
-                _y.append(r_vec[_Y])
-                _z.append(r_vec[_Z])
-                #-debug-#_r.append(np.linalg.norm(r_vec))
-                #-debug-#_p.append(vlat)
-                #-debug-#try:
-                #-debug-#    _g.append(nsl*math.acos(np.dot(r_vec,norm)/np.linalg.norm(r_vec)))
-                #-debug-#except ValueError:
-                #-debug-#    _g.append( 0.0 )
-            colorm = clr.colorConverter.to_rgb(color)
-            if USE_MAYAVI:
-                mlab.plot3d(_x,_y,_z,color=colorm,opacity=0.5,tube_radius=250)
-            #-debug-#s = 'test'+string.capitalize(gtype)+'.out'
-            #-debug-#fp = open(s,'w')
-            #-debug-#for i in range(len(_x)):
-            #-debug-#    s = '%f\t%f\t%f\t%f\t%f\t%f\n' % (_x[i],_y[i],_z[i],_p[i],_r[i],_g[i])
-            #-debug-#    fp.write(s)
-            #-debug-#fp.close()
-            del _x, _y, _z, _p, _r, _g
+        if self.saveShape:  #This is here to fake saveShape to act like __calcGeoid
+            plot_latstep = 0.1  # can't be as small as gravcalc since too many recursions
+            self.saveShape.append(list(self.r))
+            pclat-=plot_latstep
+            if pclat > 0.0:
+                self.__calcEllipse(planet,r,pclat,delta_lng)
+
         return self.rmag
         
-def plotMethods(planet,r,latstep=0.1,delta_lng=0.0, gtypes=['ellipse','sphere','reference','gravity'],color=None):
-    if color == None:
+    def plotShapes(self,planet,r,lat=90.0,delta_lng=0.0, gtypes=['ellipse','sphere','reference','gravity'],latstep='default'):
         colors = ['k','r','g','b','y','m','c']
-    else:
-        colors = []
-        for i in range(len(gtypes)):
-            colors.append(color)
-    if type(latstep) == str:
-        latstep = geoid.default_latstep
-    for i,gtype in enumerate(gtypes):
-        geoid = Shape(gtype)
-        r = geoid.calcShape(planet, r, pclat=90.0, delta_lng=delta_lng, plot3d=True, latstep=latstep, color=colors[i])
-    del geoid
+        plt.figure('Shapes')
+        for i,gtype in enumerate(gtypes):
+            self.saveShape = [['oui']]
+            rmag = self.calcShape(planet, r, pclat=90.0, delta_lng=delta_lng, gtype=gtype, latstep=latstep)
+            del self.saveShape[0]  # remove nonsense first term
+            self.saveShape = np.array(self.saveShape)
+            if gtype != 'gravity':
+                self.saveShape = np.flipud(self.saveShape)
+            _y = []; _z = [];
+            for v in self.saveShape:
+                _y.append(v[_Y])
+                _z.append(v[_Z])
+                ##May want to write out values as well
+            plt.plot(_z,_y,color=colors[self.colorCounter%len(colors)],label=gtype)
+            self.colorCounter+=1
+            plt.axis('image')
+            plt.legend()
+##        self.saveShape = False
+
 
 def rotX(x,V):
     Rx = np.array([[1.0,       0.0,        0.0],

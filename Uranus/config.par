@@ -3,31 +3,31 @@
 # Order doesn't matter but the last one read will be in effect.  
 # Parameters not included take the hard-coded default value
 ### gas data
-gasfile jupiter.paulSolar 1
+gasfile uranus.paul10xsolar.dat 1
 constituents Z T P H2 HE CH4 NH3 H2O H2S SOLN OTHER PH3 CO CO13 HCN DZ
 ### cloud data
-cloudfile jupiter.paulclSolar 7
+cloudfile uranus.cloud10xsolar.dat 7
 clouds Z T P SOLN H2O NH4SH NH3 H2S CH4 AR PH3 DZ
 ### other data, tweak and regrid
-tweakFile JupiterTweak
-regridtype 2000
-pmin 0.001
-pmax 50000.0
+tweakFile UranusTweak
+regridtype 1500
+pmin none
+pmax none
 #
 ### gravity values
 p_ref    1.0      bars
-Req      71492.0  km
-Rpol     66854.0  km
-RJ       71492.0  km
-GM       12.6686538e7
-Jn       0.0 0.0 1.4697e-2 0.0 -5.84e-4 0.0 0.31e-4
-omega    1.7585e-4
-zonal    zonalJupiter.dat
+Req      25559.0  km
+Rpol     24973.0  km
+RJ       25559.0  km
+GM       5.794e6
+Jn       0.0 0.0 3343.43e-6 0.0 0.0 0.0 0.0
+omega    1.0124e-4
+zonal    zonalUranus.dat
 gtype    ellipse
 #
 ### observations
 #--- vanilla
-distance 5.2 AU
+distance 19.2 AU
 orientation 0.0 0.0 deg
 #
 ### alpha

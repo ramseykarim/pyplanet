@@ -8,7 +8,7 @@ def modify(gas,cloud,C,Cl):
         Tlyr = gas[C['T']][i]
         
         ### Process H2S
-        depleteh2s =  True
+        depleteh2s =   True
         option='A'  #the NH4SH "normal" option
         constAmth2s = 4e-9
         if depleteh2s:

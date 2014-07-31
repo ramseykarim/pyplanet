@@ -3,9 +3,8 @@ import utils
 import os.path
 
 class planetConfig:
-    def __init__(self,planet,configFile=None,path=None,log=None,verbose=False):
+    def __init__(self,planet,configFile=None,path=None,log=None,verbose=False,printHelp=False):
         """reads in config file"""
-
 
         deprecated_toks = {'gastype':'gasType','cloudtype':'cloudType','othertype':'otherType','otherfile':'otherFile'}
         toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
@@ -27,119 +26,63 @@ class planetConfig:
         self.planet = planet
         self.verbose=verbose
         self.logFile = utils.setupLogFile(log)
-        print '\n---Reading config for %s---\n' % (planet)
         if path:
             self.path = path
         else:
             self.path = planet
         configFile = os.path.join(self.path,configFile)
-        self.gasFile = 'atmospheric constituent file - column order set by C'
-        self.cloudFile = 'atmospheric cloud file - column order set by Cl'
-        self.tweakFile = 'module that tweaks the read atmosphere'
-        self.otherFile = 'this would have the other properties, but normally is None'
-        self.C  = {}  #This 'C'onstituent dictionary has atm layer gas data.   Needs to correspond to datafile if not computing.
-        self.Cl = {}  #This 'Cl'oud dictionary has the cloud parameters.  Needs to correspond to datafile if not computing.
-        self.LP = {}  #This 'lyr' dictionary has other atmospheric layer properties
-        self.gasType = 'read'      #"read vs compute -- normally read (currently can't compute)"
-        self.cloudType = 'read'    #"read vs compute -- normally read (currently can't compute)"
-        self.otherType = 'compute' #"read vs compute -- normally compute (currently can't read)"
-        self.regridType = '1000'   # 'instructions or file to regrid data'
-        self.h2state = 'hydrogen state e or n'
-        self.pmin = None
-        self.pmax = None
-        self.distance = 1.0*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit] # distance to planet
-        self.p_ref = 1.0     # bars
-        self.Req = 1.0       # in km
-        self.Rpol = 1.0
-        self.gtype = 'ellipse'
-        self.orientation = [0.0, 0.0]   # position angle and sub-earth latitude (planetographic)
-        self.RJ = self.Req
-        self.GM_ref = 1.0e7
-        self.Jn = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.omega_m = 0.0
-        self.zonal = 'file with zonal winds'
-        self.h2newset = True
-        self.water_p = 0.0
-        self.ice_p = 0.0
-        self.nh4sh_p = 0.0
-        self.nh3ice_p = 0.0
-        self.h2sice_p = 0.0
-        self.ch4_p = 0.0
-        self.Doppler = False
 
-        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6,'H':7,'LAPSE':8,'g':9}
-        # Set defaults
-        if planet=='Neptune':
-            self.gasFile = 'neptune.paulCO_cloud21_fletcher_best_dry'
-            self.cloudFile = 'nepcloud_CO.cloud21_fletcher_best_dry'
-            self.tweakFile = 'NeptuneTweak'
-            self.otherFile = None
-            self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
-                      'PH3':11,'CO':12,'CO13':13,'HCN':14,'DZ':15}
-            self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
-            self.regridType = 'grid.dat'
-            self.h2state = 'e'
-            self.pmin = None
-            self.pmax = None
-            self.distance = 29.704*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit]
-            self.p_ref = 1.0           # bars
-            self.Req = 24766.0         # in km
-            self.Rpol = 24342.0
-            self.gtype = 'ellipse'
-            self.orientation = [348.8274, -28.97]   # position angle and sub-earth latitude (planetographic)
-            self.RJ = self.Req
-            self.GM_ref = 0.6835096e7
-            self.Jn = [0.0, 0.0, 0.3539e-2, 0.0, -0.28e-4, 0.0, 0.0]
-            self.omega_m = 1.01237195e-4
-            self.zonal = 'zonalNeptune.dat'
-            self.Doppler = False
-        elif planet=='Jupiter':
-            self.gasFile = 'jupiter.paulSolar'
-            self.cloudFile = 'jupiter.paulclSolar'
-            self.tweakFile = None
-            self.otherFile = None
-            self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
-                      'PH3':11,'CO':12, 'CO13':13,'HCN':14,'DZ':15}
-            self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
-            self.regridType = 'grid.dat'
-            self.h2state = 'e'
-            self.pmin = None
-            self.pmax = None
-            self.distance = 5.2*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit]
-            self.p_ref = 1.0           # bars
-            self.Req = 71492.0         # in km
-            self.Rpol = 66854.0
-            self.gtype = 'ellipse'
-            self.orientation = [3.12, 0.0]
-            self.RJ = self.Req
-            self.GM_ref = 12.6686538e7
-            self.Jn = [0.0, 0.0, 1.4697e-2, 0.0, -5.84e-4, 0.0, 0.31e-4]
-            self.omega_m = 1.7585e-4
-            self.zonal = 'Jupiter/zonalJupiter.dat'
-            self.Doppler = False
+        print '\n---Setting config for %s---\n' % (planet)
 
+        #Set "universal" defaults (i.e. things not currently set but still used internally)
+        self.gasType = 'read'       # "read vs compute -- normally read (currently can't compute)"
+        self.cloudType = 'read'     # "read vs compute -- normally read (currently can't compute)"
+        self.otherType = 'compute'  # "read vs compute -- normally compute (currently can't read)"
+        self.otherFile = None       # if otherType could 'read', this file would have the data...
+        self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6,'H':7,'LAPSE':8,'g':9}    #...and this would hold its dictionary properties
+
+        #These are the current config values -- get seeded with help text
+        #   note that the tok values can differ, hence the tok dictionary (although generally just all lowercase)
+        self.gasFile = 'atmospheric constituent file - column order set by C (string)'
+        self.gasFileHdr = 'number of header lines (to ignore) in gasFile (int)'
+        self.cloudFile = 'atmospheric cloud file - column order set by Cl (string)'
+        self.cloudFileHdr = 'number of header lines (to ignore) in cloudFile (int)'
+        self.tweakFile = 'module that tweaks the read atmosphere (string)'
+        self.C  = "This 'C'onstituent dictionary has atm layer gas data.   Needs to correspond to datafile if not computing {string}"
+        self.Cl = "This 'Cl'oud dictionary has the cloud parameters.  Needs to correspond to datafile if not computing {string}"
+        self.regridType = 'instructions or file to regrid data (see regrid.py) (string/int)'
+        self.h2state = 'hydrogen state [e or n] (char)'
+        self.pmin = 'pmin that is used in the regrid (none uses file min) [bars] (float)'
+        self.pmax = 'pmax that is used in the regrid (none uses file max) [bars] (float)'
+        self.distance = 'distance to the planet [AU] (float)'
+        self.p_ref = 'the pressure where the radii are specified (Req/Rpol) [bars] (float)'
+        self.Req = 'equatorial radius at p_ref [km] (float)'
+        self.Rpol = 'polar radius at p_ref [km] (float)'
+        self.gtype = 'type for planet shape [ellipse/reference/gravity/sphere] (string)'
+        self.orientation = 'position angle and sub-earth latitude (planetographic) [float,float]'
+        self.RJ = 'radius for gravity terms (usually Req) [km] (float)'
+        self.GM_ref = 'GM at radius RJ [km3/s2] (float)'
+        self.Jn = 'gravity terms (float,float,float,float,float,float)'
+        self.omega_m = 'rotation velocity [rad/s] (float)'
+        self.zonal = 'file with zonal winds (string)'
+        self.h2newset = 'forget... (bool)'
+        self.water_p = 'water particle size [um?] (float)'
+        self.ice_p = 'ice particle size [um?] (float)'
+        self.nh4sh_p = ' nh4sh particle size [um?] (float)'
+        self.nh3ice_p = 'ammonia-ice particle size [um?] (float)'
+        self.h2sice_p = 'h2s-ice particle size [um?] (float)'
+        self.ch4_p = 'methane particle size [um?] (float)'
+        self.Doppler = 'use Doppler or not (bool)'
+        if printHelp:
+            print 'eventually will print out tok help...'
+
+        self.planetaryDefaults()
         self.setConfig(configFile)
         pars = self.show()
         utils.log(self.logFile,planet,False)
         utils.log(self.logFile,configFile,False)
         utils.log(self.logFile,pars,True)
-        if self.gtype == 'geoid' or self.Doppler:
-            try:
-                filename = os.path.join(self.path,self.zonal)
-                fp = open(filename,'r')
-                self.vwlat = []
-                self.vwdat = []
-                for line in fp:
-                    data = line.split()
-                    self.vwlat.append(float(data[0]))
-                    self.vwdat.append(float(data[1]))
-                fp.close()
-            except IOError:
-                self.vwlat = [0.0,90.0]
-                self.vw.dat = [0.0,0.0]
-        else:
-            self.vwlat = [0.0,90.0]
-            self.vwdat = [0.0,0.0]
+
 
     def setConfig(self,configFile):
         """Reads in config files and updates after default set in __init__.  These are all shown in showConfig"""
@@ -166,8 +109,16 @@ class planetConfig:
             nTokMod += 1 
             if tok == 'gasfile':
                 self.gasFile = data[0]
+                try:
+                    self.cloudFileHdr = float(data[1])
+                except:
+                    self.cloudFileHdr = 0
             elif tok == 'cloudfile':
                 self.cloudFile = data[0]
+                try:
+                    self.cloudFileHdr = float(data[1])
+                except:
+                    self.cloudFileHdr = 0
             elif tok == 'otherfile':
                 self.otherFile = data[0]
             elif tok == 'constituents':
@@ -349,6 +300,25 @@ class planetConfig:
                 print 'Unknown token:  ',tok
                 nTokMod-=1
         fp.close()
+
+        if self.gtype == 'geoid' or self.Doppler:
+            try:
+                filename = os.path.join(self.path,self.zonal)
+                fp = open(filename,'r')
+                self.vwlat = []
+                self.vwdat = []
+                for line in fp:
+                    data = line.split()
+                    self.vwlat.append(float(data[0]))
+                    self.vwdat.append(float(data[1]))
+                fp.close()
+            except IOError:
+                self.vwlat = [0.0,90.0]
+                self.vw.dat = [0.0,0.0]
+        else:
+            self.vwlat = [0.0,90.0]
+            self.vwdat = [0.0,0.0]
+        
         return nTokMod
 
     def show(self):
@@ -359,4 +329,60 @@ class planetConfig:
             s+='\t%s:  %s\n' %(key,str(variables[key]))
         print 'CONFIG.PY:360 JUST TO REMIND HOW TO ACCESS VARIABLES ==>',self.__dict__['Doppler']
         return s
+
+    def planetaryDefaults(self):
+        """This sets some defaults (mainly to have them in a different place than just the directory config.par file, which gets changed)"""
+        # Set defaults
+        if self.planet=='Neptune':
+            self.gasFile = 'neptune.paulCO_cloud21_fletcher_best_dry'
+            self.gasFileHdr = 0
+            self.cloudFile = 'nepcloud_CO.cloud21_fletcher_best_dry'
+            self.cloudFileHdr = 0
+            self.tweakFile = 'NeptuneTweak'
+            self.otherFile = None
+            self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
+                      'PH3':11,'CO':12,'CO13':13,'HCN':14,'DZ':15}
+            self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
+            self.regridType = 'grid.dat'
+            self.h2state = 'e'
+            self.pmin = None
+            self.pmax = None
+            self.distance = 29.704*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit]
+            self.p_ref = 1.0           # bars
+            self.Req = 24766.0         # in km
+            self.Rpol = 24342.0
+            self.gtype = 'ellipse'
+            self.orientation = [348.8274, -28.97]   # position angle and sub-earth latitude (planetographic)
+            self.RJ = self.Req
+            self.GM_ref = 0.6835096e7
+            self.Jn = [0.0, 0.0, 0.3539e-2, 0.0, -0.28e-4, 0.0, 0.0]
+            self.omega_m = 1.01237195e-4
+            self.zonal = 'zonalNeptune.dat'
+            self.Doppler = False
+        elif self.planet=='Jupiter':
+            self.gasFile = 'jupiter.paulSolar'
+            self.gasFileHdr = 0
+            self.cloudFile = 'jupiter.paulclSolar'
+            self.cloudFileHdr = 0
+            self.tweakFile = None
+            self.otherFile = None
+            self.C = {'Z':0,'T':1,'P':2,'H2':3,'HE':4,'CH4':5,'NH3':6,'H2O':7,'H2S':8,'SOLN':9,'OTHER':10,
+                      'PH3':11,'CO':12, 'CO13':13,'HCN':14,'DZ':15}
+            self.Cl= {'Z':0,'T':1,'P':2,'SOLN':3,'H2O':4,'NH4SH':5,'NH3':6,'H2S':7,'CH4':8,'AR':9,'PH3':10, 'DZ':11}
+            self.regridType = 'grid.dat'
+            self.h2state = 'e'
+            self.pmin = None
+            self.pmax = None
+            self.distance = 5.2*utils.Units['AU']/utils.Units[utils.processingAtmLayerUnit]
+            self.p_ref = 1.0           # bars
+            self.Req = 71492.0         # in km
+            self.Rpol = 66854.0
+            self.gtype = 'ellipse'
+            self.orientation = [3.12, 0.0]
+            self.RJ = self.Req
+            self.GM_ref = 12.6686538e7
+            self.Jn = [0.0, 0.0, 1.4697e-2, 0.0, -5.84e-4, 0.0, 0.31e-4]
+            self.omega_m = 1.7585e-4
+            self.zonal = 'Jupiter/zonalJupiter.dat'
+            self.Doppler = False
 

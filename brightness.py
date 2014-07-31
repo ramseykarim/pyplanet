@@ -55,17 +55,13 @@ class brightness():
         print ' '
         return layerAlp 
 
-    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, verbose=None, plot=None, isImage=False, discAverage=False, normW4plot=True):
+    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, isImage=False, discAverage=False, normW4plot=True):
         """This computes the brightness temperature along one ray path"""
 
-        #print 'discAverage = ',discAverage
-
-        if verbose == None:
-            verbose = self.verbose
-        if plot == None:
-            plot = self.plot
+        verbose = self.verbose
+        plot = self.plot
         # get path lengths (ds_layer) vs layer number (num_layer) - currently frequency independent refractivity
-        self.path = ray.compute_ds(atm,b,orientation,plot=plot,verbose=verbose)
+        self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbose=verbose,plot=plot)
         if self.path.ds == None:
             return None
         
@@ -148,7 +144,7 @@ class brightness():
             self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
             #####-----Weigthing functions
             plt.figure('radtran')
-            #plt.subplot(121)
+            plt.subplot(121)
             for i,f in enumerate(freqs):
                 #label=r'$\tau$: %.1f GHz' % (f)
                 #plt.semilogy(self.tau[i],self.P,label=label)
@@ -158,15 +154,12 @@ class brightness():
                     wplot = self.W[i]
                 label=r'$W$: %.1f GHz' % (f)
                 label=r'%.1f cm' % (30.0/f)
-                plt.semilogy(wplot,self.P,label=label)
+                label=r'%.0f$^o$' % ((180.0/math.pi)*math.asin(b[0]))
+                plt.semilogy(wplot,self.P,label=label,linewidth=3)
                 #label=r'Tlyr$_b$: %.1f GHz' % (f)
                 #plt.semilogy(self.Tb_lyr[i],self.P,label=label)
             plt.legend()
-            v = list(plt.axis())
-            v[2] = 100.0*math.ceil(self.P[-1]/100.0)
-            v[3] = 1.0E-7*math.ceil(self.P[0]/1E-7)
-            plt.axis(v)
-            #plt.legend()
+            plt.axis(ymin=100.0*math.ceil(self.P[-1]/100.0), ymax=1.0E-7*math.ceil(self.P[0]/1E-7))
             #plt.xlabel('units')
             plt.ylabel('P [bars]')
             #####-----Alpha
@@ -176,8 +169,9 @@ class brightness():
                 label=r'%.1f cm' % (30.0/f)
                 pl = list(self.layerAlpha[i])
                 del pl[0]
-                print 'Why do I have to delete a layerAlpha element?  [brightness:L180]'
-                plt.semilogy(pl,self.P,label=label)
+                #print 'Why do I have to delete a layerAlpha element?  [brightness:L180]'
+                ##==> because alpha is at the layer boundaries, so there are n+1 of them
+                plt.loglog(pl,self.P,label=label)
             plt.legend()
             v = list(plt.axis())
             v[2] = 100.0*math.ceil(self.P[-1]/100.0)

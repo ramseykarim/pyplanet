@@ -1,2 +1,5 @@
 nh3_kd
+---options---
+nh3_kd
+nh3_bg
 nh3_sj

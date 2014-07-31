@@ -63,7 +63,9 @@ class planet:
         self.verbose = verbose
 
         ### Some convenience values for the specific Neptune observations
-        self.fvla = [4.86,8.46,14.94,22.46,43.34]
+        self.fvla_old = [4.86,8.46,14.94,22.46,43.34]
+        self.fvla_new = [1.5,3.0,6.0,10.,15.,22.,33.,45.]
+        self.fvla = [3.0, 6.0, 10.0, 15.0, 33.0]
         anglecap = 13.24
         bvalcap = [0.5,0.6,0.7,0.8,0.9,0.925,0.95]
         self.bvla = []
@@ -87,11 +89,13 @@ class planet:
         self.config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
 
         ### Create atmosphere:  outputs are self.atm.gas, self.atm.cloud and self.atm.layerProperty
-        self.atm = atm.atmosphere(self.planet,config=self.config,log=self.log,verbose=verbose,plot=plot)
+        self.atm = atm.Atmosphere(self.planet,config=self.config,log=self.log,verbose=verbose,plot=plot)
         self.atm.run()
         self.log.flush()
 
-    def run(self, freqs=[1.0,10.0,1.0], b=0.04175, freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None):
+    def run(self, freqs=[1.0,10.0,1.0], b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None):
+        """Runs the model to produce the brightness temperature, weighting functions etc etc
+           b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)"""
         if freqs == None and freqUnit == None:
             freqs = self.freqs
             freqUnit = self.freqUnit
@@ -134,7 +138,7 @@ class planet:
             self.Tb_img = []
             imtmp = []
         for i,bv in enumerate(b):
-            print '%d of %d:  ' % (i,len(b)),
+            print '%d of %d (view %s)  ' % (i+1,len(b),str(bv)),
             Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,isImage=isImg,discAverage=self.discAverage)
             if self.bright.path != None and self.rNorm == None:
                 self.rNorm = self.bright.path.rNorm
@@ -196,19 +200,25 @@ class planet:
             s+='\n'
             sm+='\n'
             df.write(s)
-            matchfp.write(sm)
+            #.-1-.#matchfp.write(sm)
             for i,f in enumerate(freqs):
                 s = '%.9f\t' % (f)
                 sm = '%.5f:  ' % (f)
-                for j in range(len(b)):
+                #v-1-v#
+                sm = ''
+                #^-1-^#
+                for j in range(len(hit_b)):
                     s+='  %.2f\t  ' % (self.Tb[j][i])
                     cma = ', '
                     if j==0:
                         cma=''
-                    sm+='%s%.2f' % (cma,self.Tb[j][i])
+                    #v-1-v#
+                    sm+= '%.4f\t%.4f\t%.3f\t%.2f\n' % (hit_b[j][0],hit_b[j][1],math.sqrt(hit_b[j][0]**2 + hit_b[j][1]**2),self.Tb[j][i])
+                    #^-1-^#
+                    #.-1-.#sm+='%s%.2f' % (cma,self.Tb[j][i])
                 print s
                 s+='\n'
-                sm+='\n'
+                #.-1-.#sm+='\n'
                 df.write(s)
                 matchfp.write(sm)
             df.close()
@@ -235,6 +245,7 @@ class planet:
         b=self.__bRequest__(b,block)
         return b
     def __bRequest__(self,b,block):
+        allowedSubImage = [9,16,25,36,49,64]
         self.discAverage = False
         printOutb = False
         try:
@@ -271,11 +282,13 @@ class planet:
             if len(b) == 2:
                 pb.append(b)            ##...data at one location
             else:
+                angle = b[0]*math.pi/180.0
+                del b[0]
                 for v in b:
-                    pb.append([v,0.0])  ##...a line along the equator
+                    pb.append([v*math.cos(angle),v*math.sin(angle)])  ##...a line at given angle (angle is first entry)
             b = pb
         else:
-            if len(b) > 8:  ###This does a sub-image but needs perfect square (9,16,25,...)
+            if len(b) in allowedSubImage:  ###This does a sub-image at those b locations
                 self.imRow = int(math.sqrt(len(b)))
         self.b = b
         if printOutb:

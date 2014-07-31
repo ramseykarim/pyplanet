@@ -21,7 +21,7 @@ import regrid
 
 planetDictionary = {'Jupiter':0,'Saturn':1,'Uranus':2,'Neptune':3}
 
-class atmosphere:
+class Atmosphere:
     def __init__(self,planet,config='config.par',path=None,log=None,verbose=False,plot=True):
         """reads/computes atmospheres.  This should return:
                self.gas
@@ -37,7 +37,7 @@ class atmosphere:
         self.plot=plot
         self.logFile = utils.setupLogFile(log)
         
-        print '\n---Atmosphere of %s---\n' % (planet)
+        print '\n---Atmosphere of %s---' % (planet)
         if type(config) == str:
             config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
         self.config = config
@@ -233,14 +233,16 @@ class atmosphere:
         plt.xlabel('Property')
         plt.legend()
 
-    def readGas(self,gasFile=None,verbose=False,numHeaderLines=1):
+    def readGas(self,gasFile=None,verbose=False,numHeaderLines=None):
         """Reads gas profile file as self.gas"""
 
-        if gasFile == None:
+        if gasFile is None:
             gasFile=self.config.gasFile
         gasFile = os.path.join(self.config.path,gasFile)
+        if numHeaderLines is None:
+            numHeaderLines = self.config.gasFileHdr
 
-        print 'Reading '+gasFile
+        print 'Reading '+gasFile+'  (Header:  '+str(numHeaderLines)+')'
         self.gas = []
         print '\tUsing atmsopheric constituent:  ',
         for k in self.config.C:
@@ -249,9 +251,9 @@ class atmosphere:
 
         try:
             fp = open(gasFile,"r")
-        except:
-            print gasFile+' was not found - returning no gas profile'
-            return 0
+        except IOError:
+            print gasFile+' was not found - returning no gas profile\n\n'
+            raise IOError
         i=0
         lineno = 0
         pastHeader = False
@@ -317,13 +319,15 @@ class atmosphere:
         fp.close()
                 
 
-    def readCloud(self,cloudFile=None,verbose=False,numHeaderLines=7):
+    def readCloud(self,cloudFile=None,verbose=False,numHeaderLines=None):
         """Reads in cloud data if we have it..."""
         if cloudFile == None:
             cloudFile=self.config.cloudFile
         cloudFile = os.path.join(self.config.path,cloudFile)
+        if numHeaderLines is None:
+            numHeaderLines = self.config.cloudFileHdr
 
-        print 'Reading '+cloudFile
+        print 'Reading '+cloudFile+'  (Header:  '+str(numHeaderLines)+')'
         self.cloud = []
         print '\tUsing cloud component:  ',
         for k in self.config.Cl:
@@ -332,8 +336,9 @@ class atmosphere:
 
         try:
             fp = open(cloudFile,"r")
-        except:
-            print cloudFile+' was not found - returning no clouds'
+        except IOError:
+            print cloudFile+' was not found - returning no clouds\n\n'
+            raise IOError
         i=0
         lineno = 0
         pastHeader = False

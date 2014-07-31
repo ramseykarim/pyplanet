@@ -2,7 +2,7 @@
 import os, os.path, argparse
 
 constituents = os.listdir('constituents/')
-print constituents
+#print constituents
 
 o = argparse.ArgumentParser(prefix_chars='-+')
 for c in constituents:
