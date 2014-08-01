@@ -146,7 +146,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     geoid = shape.Shape(gtype)
     r2 = geoid.calcShape(atm,rNorm,pclat,delta_lng)
     print ' within %.2f m' % (abs(r1-r2)*100.0)
-    geoid.printShort()  #short version of print geoid
+    geoid.printShort()
     if plot:
         plotStuff(atm=atm,r=rNorm,b=b,gtype=gtype,delta_lng=delta_lng,geoid=geoid,tip=tip,rotate=rotate)
 
@@ -198,7 +198,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
                 ds_step = dsm
             elif direction == 'egress':
                 ds_step = dsp
-        except ValueError:  #tangent layer
+        except ValueError:  #tangent layer (probably)
             if direction == 'ingress':
                 print 'In tangent layer  ',
                 direction = 'tangent'
@@ -211,9 +211,10 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
             else:
                 inAtmosphere = False
                 break
-        if ds_step < 0.0:
-            if direction != 'egress':
-                print 'Error:  ds < 0  (%s:  r.s=%f, ds=%f, [%f,%f])' % (direction,rdots,ds_step,dsp,dsm)
+        if ds_step < 0.0:  #What is correct here?  Is this true for egress, or only in error?  8/1/14 I commented out if statement,
+                           # but only print statement was indented
+            #if direction != 'egress':
+            print 'Error:  ds < 0  (%s:  r.s=%f, ds=%f, [%f,%f])' % (direction,rdots,ds_step,dsp,dsm)
             inAtmosphere = False
             break
 
@@ -233,7 +234,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
         delta_lng = (180.0/math.pi)*math.atan2( np.dot(rnext,xHat), np.dot(rnext,zHat) )
         r2 = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng)
         if abs(r2-rNextMag) > 10.0:
-            print 'Warning:  %f != %f' % (r2,rNextMag)
+            print 'Warning:  %f != %f (%f km)' % (r2,rNextMag,r2-rNextMag)
         r.append( rnext )  # which is also geoid.r, or should be 
         n.append( geoid.n )
 

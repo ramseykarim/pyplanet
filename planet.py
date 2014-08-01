@@ -12,9 +12,9 @@ import config
 import utils
 import datetime
 import os.path
+import TBfile
 
 version = 'pre-release'
-header = {'freqs':'', 'b':'', 'res':'', 'gtype':'', 'orientation':'', 'aspect':'', 'radii':'', 'rNorm':'', 'distance':''}
 
 class planet:
     def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbose=False, plot=True):
@@ -46,9 +46,10 @@ class planet:
 
         self.planet = string.capitalize(name)
         runStart = datetime.datetime.now()
+        self.header = {}
 
         print 'Planetary modeling  (ver '+version+')\n'
-        print "In alpha, clouds_idp need otherPar['refr']"
+        print "PLANET.PY_L51:  In alpha, clouds_idp need otherPar['refr'] - still?"
 
         ### Set up log file
         if string.lower(log)=='auto':
@@ -146,21 +147,19 @@ class planet:
                 self.tip = self.bright.path.tip
             if self.bright.path != None and self.rotate == None:
                 self.rotate = self.bright.path.rotate
-            if Tbt == None:
+            if Tbt == None:  #I've now done away with returning None by returning T_cmb in brightness.py
                 Tbt = [0.0]
             else:
                 hit_b.append(bv)
                 self.Tb.append(Tbt)
             if isImg:
-                #if Tbt[0]>250.0:
-                #    Tbt[0]=0.0
                 imtmp.append(Tbt[0])
                 if not (i+1)%self.imRow:
                     self.Tb_img.append(imtmp)
                     imtmp = []
         self.log.flush()
 
-        global header
+        ###Write output files (this needs to be compatible with TBfile  -- eventually should incorporate it in there###
         if isImg:
             if abs(block[1])>1:
                 btmp = '%02dof%02d'%(block[0],abs(block[1]))
@@ -170,8 +169,8 @@ class planet:
             print '\nWriting image data to ',datFile
             self.__setHeader__(self.rNorm)
             df = open(datFile,'w')
-            for hdr in header:
-                df.write(header[hdr])
+            for hdr in self.header:
+                df.write(self.header[hdr])
             for data0 in self.Tb_img:
                 s = ''
                 for data1 in data0:
@@ -187,9 +186,9 @@ class planet:
             matchfp = open(matchFile,'w')
             self.__setHeader__(None)
             df = open(datFile,'w')
-            for hdr in header:
-                df.write(header[hdr])
-            s = 'GHz \tK@km'
+            for hdr in self.header:
+                df.write(self.header[hdr])
+            s = 'U GHz \tK@km'
             sm = 'b:  '
             for i,bv in enumerate(hit_b):
                 s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
@@ -224,22 +223,21 @@ class planet:
             df.close()
             matchfp.close()
     def __setHeader__(self,intercept):
-        global header
         if not intercept:  # didn't intercept the planet
-            header['res'] = '# res not set\n'
-            header['orientation'] = '# orientation not set\n'
-            header['aspect'] = '# aspect tip, rotate not set\n'
-            header['rNorm'] = '# rNorm not set\n'
+            self.header['res'] = '# res not set\n'
+            self.header['orientation'] = '# orientation not set\n'
+            self.header['aspect'] = '# aspect tip, rotate not set\n'
+            self.header['rNorm'] = '# rNorm not set\n'
         else:
             resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.config.distance)
             print 'resolution = ',resolution
-            header['res'] = '# res:  %f arcsec\n' % (resolution)
-            header['orientation'] = '# orientation:   %s\n' % (repr(self.config.orientation))
-            header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*self.tip, (180.0/math.pi)*self.rotate)
-            header['rNorm'] = '# rNorm: %f\n' % self.rNorm
-        header['gtype'] = '# gtype: %s\n' % (self.config.gtype)
-        header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.config.Req,self.config.Rpol)
-        header['distance'] = '# distance:  %f km\n' % (self.config.distance)
+            self.header['res'] = '# res:  %f arcsec\n' % (resolution)
+            self.header['orientation'] = '# orientation:   %s\n' % (repr(self.config.orientation))
+            self.header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*self.tip, (180.0/math.pi)*self.rotate)
+            self.header['rNorm'] = '# rNorm: %f\n' % self.rNorm
+        self.header['gtype'] = '# gtype: %s\n' % (self.config.gtype)
+        self.header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.config.Req,self.config.Rpol)
+        self.header['distance'] = '# distance:  %f km\n' % (self.config.distance)
         
     def bRequest(self,b,block):
         b=self.__bRequest__(b,block)
@@ -254,8 +252,7 @@ class planet:
         except:
             print 'Error in __bRequest__ at line 242'
             printOutb = False
-        global header
-        header['b'] ='# b request:  '+str(b)+'  '+str(block)+'\n'
+        self.header['b'] ='# b request:  '+str(b)+'  '+str(block)+'\n'
         self.imRow = None
         if type(b) == float:  ## this generates a grid at that spacing and blocking
             pb = []
@@ -302,8 +299,7 @@ class planet:
                if there is a list of three it is assumed to be start, stop, step
                     if the step is negative, it is assumed as a log step
                if it is a list!=3, the list is used"""
-        global header
-        header['freqs'] = '# freqs request: '+str(freqs)+' '+freqUnit+'\n'
+        self.header['freqs'] = '# freqs request: '+str(freqs)+' '+freqUnit+'\n'
         ### Process frequency range "request"
         if type(freqs)==str:
             freqs = np.loadtxt(freqs)

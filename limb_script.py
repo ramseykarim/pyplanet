@@ -1,0 +1,81 @@
+import planet
+import numpy as np
+import scipy.signal
+import matplotlib.pyplot as plt
+import os
+import math
+
+#from https://science.nrao.edu/facilities/vla/docs/manuals/oss/performance/resolution
+vla = {} #band, GHz, arcsec
+vla['4'] = [0.074, 24.00, 80.00, 260.00, 850.0]
+vla['P'] = [0.350,  5.60, 18.50,  60.00, 200.0]
+vla['L'] = [1.500,  1.30,  4.30,  14.00,  46.0]
+vla['S'] = [3.000,  0.65,  2.10,   7.00,  23,0]
+vla['C'] = [6.000,  0.33,  1.00,   3.50,  12.0]
+vla['X'] = [10.00,  0.20,  0.60,   2.01,   7.2]
+vla['Ku']= [15.00,  0.13,  0.42,   1.40,   4.6]
+vla['K'] = [22.00,  0.089, 0.28,   0.95,   3.1]
+vla['Ka']= [33.00,  0.059, 0.19,   0.63,   2.1]
+vla['Q'] = [45.00,  0.043, 0.14,   0.47,   1.5]
+f = 0
+A = 1
+B = 2
+C = 3
+D = 4
+
+band = 'C'
+arrayConfig = A
+
+angle = 90.0
+delta_b = 0.01
+
+freq = vla[band][f]
+beamwidth = vla[band][arrayConfig]
+print 'Beamwidth:  ',beamwidth
+beamwidth = beamwidth/3600.0*(math.pi/180.0)
+radius = 71492.
+distance = 777908927.
+res = math.atan(delta_b*radius/distance)*(180.0/math.pi)*3600.0   #just FYI
+b05 = math.tan(beamwidth/2.0)*(distance/radius)
+print 'Resolution = ',res
+print 'b05 = ',b05
+kerexp = math.log(2.0)/b05**2
+
+
+genFiles = False
+if genFiles:
+    j = planet.planet('jupiter')
+    bv = [angle]
+    for v in np.arange(0.0,1.2,delta_b):
+        bv.append(v)
+    j.run(freqs=freq,b=bv)
+
+else:
+    files = ['jup0shape_Ku.dat','jup45shape_Ku.dat','jup90shape_Ku.dat']
+    files = ['jup45shape_C.dat']
+    colscnv = ['b','r','k']
+    colsnon = ['b--','r--','k--']
+
+    jdat = []
+    for i,fil in enumerate(files):
+        tmpData = np.loadtxt(fil)
+        b = tmpData[:,2]
+        b = np.concatenate([-np.flipud(b),b])
+        np.delete(b,len(b)/2)
+
+        Ttmp = tmpData[:,3]
+        Ttmp = np.concatenate([np.flipud(Ttmp),Ttmp])
+        np.delete(Ttmp,len(Ttmp)/2)
+        jdat.append(Ttmp)
+        ker = np.exp(-kerexp*b**2)
+        ker = ker/np.sum(ker)
+        cnv = scipy.signal.convolve(Ttmp,ker,'same')
+
+        plt.figure(1)
+        plt.plot(b,cnv,colscnv[i])
+        plt.plot(b,Ttmp,colsnon[i])
+        #plt.axis(xmin=0.0,xmax=1.1)
+        #plt.axis(ymin=50,ymax=210)
+
+        plt.figure(2)
+        plt.plot(b,ker)

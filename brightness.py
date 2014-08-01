@@ -63,7 +63,10 @@ class brightness():
         # get path lengths (ds_layer) vs layer number (num_layer) - currently frequency independent refractivity
         self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbose=verbose,plot=plot)
         if self.path.ds == None:
-            return None
+            self.Tb = []
+            for j in range(len(freqs)):
+                self.Tb.append(utils.T_cmb)
+            return self.Tb
         
         # these profiles are saved
         self.tau = []

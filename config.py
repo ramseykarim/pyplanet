@@ -221,7 +221,7 @@ class planetConfig:
         keys = self.toks.keys()
         keys.sort()
         for key in keys:
-            s+='\t%s:  %s %s\n' % (key, type(self.__dict__[self.toks[key][0]]), str(self.__dict__[self.toks[key][0]]))
+            s+='\t%15s:  %15s \t%s\n' % (key, str(type(self.__dict__[self.toks[key][0]])), str(self.__dict__[self.toks[key][0]]))
         return s
 
     def planetaryDefaults(self):

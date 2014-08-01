@@ -9,9 +9,11 @@ from scipy import interpolate
 import utils
 import shape
 import raypath
+import TBfile
 
 class Img:
     def __init__(self,i='?',readAndPlot=True):
+        self.TB = TBfile.TBfile('.')
         self.kerneled = False
         self.kernel = None
         self.convolved = False
@@ -21,110 +23,17 @@ class Img:
         
     def getImage(self,ifilename=None,usedir='Output'):
         """Reads in image files from pyPlanet"""
-        try:
-            files = os.listdir(usedir)
-        except OSError:
-            usedir = '.'
-            files = os.listdir(usedir)
-        self.headerText = []
-        self.infiles = []
 
-        # get list of files (integers in listdir list)
-        if type(ifilename) == int:
-            ifile = [ifilename]
-        elif ifilename == '?' or ifilename==None:
-            for i,fn in enumerate(files):
-                print '%d  -  %s' % (i,fn)
-            sfile = raw_input('File numbers: ')
-            if '-' in sfile:
-                sfile = sfile.split('-')
-                ifile = range(int(sfile[0]),int(sfile[1])+1)
-            else:
-                sfile = sfile.split()
-                ifile = []
-                for i in sfile:
-                    ifile.append(int(i))
-        elif type(ifilename) == list:
-            ifile = ifilename
-        else:
-            files = [ifilename]
-            ifile = [0]
+        self.TB.read(ifilename)  #what to do about usedir?
 
-        # read files
-        print '====> update to use filereader (readTB) in utils...but need to fix TB vs img Units line issue (first line after header or not)'
-        data = []
-        imRow = imCol = 0
-        for i in ifile:
-            filename = os.path.join(usedir,files[i])
-            print '\nOpening '+files[i]
-            try:
-                fp = open(filename,'r')
-            except IOError:
-                print filename+' not found'
-                return 0
-            self.infiles.append(filename)
-            self.headerText.append('# file: '+filename+'\n')
-            for line in fp:
-                if line[0]=='#':
-                    self.headerText.append(line)
-                    continue
-                imRow+=1
-                vdat = []
-                sdat = line.split()
-                imCol = 0
-                for v in sdat:
-                    imCol+=1
-                    vdat.append(float(v))
-                data.append(vdat)
-            fp.close()
-        self.headerText.append('# img_filename: %s\n' % (filename))
-        self.headerText.append('# img_size:  %d  %d\n' % (imRow,imCol))
-        self.data = np.array(data)
-        self.parseHeader(self.headerText)
-        self.xyextents = [-self.resolution*len(self.data)/2.0,self.resolution*len(self.data)/2.0,-self.resolution*len(self.data)/2.0,self.resolution*len(self.data)/2.0]
-        self.x = []
-        self.y = []
-        for i in range(len(self.data)):
-            self.x.append(self.xyextents[0] + i*self.resolution)
-            self.y.append(self.xyextents[2] + i*self.resolution)
-        self.x = np.array(self.x)
-        self.y = np.array(self.y)
+        print 'For now copy data over to local self...'
+        self.data = self.TB.data
+        self.header = self.TB.header
+        self.xyextents = self.TB.xyextents
+        self.x = self.TB.x
+        self.y = self.TB.y
+        self.resolution = self.TB.resolution
         self.show()
-        return imRow, imCol
-
-    def parseHeader(self, headerText):
-        """Parses the pyPlanet image header"""
-        self.header = {}
-        for hdr in headerText:
-            hdr = hdr.strip('#').strip()
-            print hdr
-            updateKey = False
-            if ':' in hdr:
-                updateKey = True
-                hdrkey = hdr.split(':')[0].split()[0]
-                hdr = hdr.split(':')[1]
-                h = []
-                hdr = hdr.split()
-                for dat in hdr:
-                    dat = dat.strip('[').strip(']').strip(',')
-                    try:
-                        h.append(float(dat))
-                    except ValueError:
-                        h.append(dat)
-            else:
-                hdrkey = hdr.split()[0]
-                if not self.header.has_key(hdrkey):
-                    updateKey = True
-                    h = [None]
-            if updateKey:
-                self.header[hdrkey] = h
-        ### set any header-derived values
-        if self.header.has_key('res'):
-            self.resolution = self.header['res'][0]   # keep this for backward compatibility
-        if self.header.has_key('freqs'):
-            self.freq = self.header['freqs'][0]
-            self.header['band'] = utils.getRFband(self.freq,'GHz')
-            self.headerText.append('# band: %s\n' % self.header['band'])
 
     def fix(self, fixThreshhold='auto', padValue='auto'):
         """Fix or reset points:
@@ -507,7 +416,6 @@ class Img:
         self.kerneled = True
         
         return alpha
-
 
     def discAverage(self,threshhold=1.0):
         nave = 0
