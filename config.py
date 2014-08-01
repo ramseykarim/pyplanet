@@ -3,25 +3,15 @@ import utils
 import os.path
 
 class planetConfig:
-    def __init__(self,planet,configFile=None,path=None,log=None,verbose=False,printHelp=False):
+    def __init__(self,planet,configFile='config.par',path=None,log=None,verbose=False,printHelp=False):
         """reads in config file"""
-
-        deprecated_toks = {'gastype':'gasType','cloudtype':'cloudType','othertype':'otherType','otherfile':'otherFile'}
-        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
-                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
-                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
-                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
-        toksFloat = {'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
-                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
-                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
-        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
-                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
-                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
-                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
-        toks = {'gasfile':'gasFile','cloudfile':'cloudFile','constituents':'C','clouds':'Cl','tweakfile':'tweakFile','regridtype':'regridType',
-                'pmin':'pmin','pmax':'pmax','omega':'omega_m','jn':'Jn','gm':'GM_ref','req':'Req','rpol':'Rpol','distance':'distance','rj':'RJ',
-                'p_ref':'p_ref','zonal':'zonal','gtype':'gtype','orientation':'orientation','h2state':'h2state','doppler':'Doppler',
-                'h2newset':'h2newset','water':'water_p','ice':'ice_p','nh4sh':'nh4sh_p','nh3ice':'nh3ice_p','h2sice':'h2sice_p','ch4':'ch4_p'}
+        self.toks = {'gasfile':['gasFile',str], 'cloudfile':['cloudFile',str], 'gasfilehdr':['gasFileHdr',int], 'cloudfilehdr':['cloudFileHdr',int],
+                     'constituents':['C',str], 'clouds':['Cl',str], 'tweakfile':['tweakFile',str], 'regridtype':['regridType',str],
+                     'pmin':['pmin',float], 'pmax':['pmax',float], 'omega':['omega_m',float], 'jn':['Jn',str], 'gm':['GM_ref',float],
+                     'req':['Req',float], 'rpol':['Rpol',float], 'distance':['distance',float], 'rj':['RJ',float], 'p_ref':['p_ref',float], 'zonal':['zonal',str],
+                     'gtype':['gtype',str], 'orientation':['orientation',str], 'h2state':['h2state',str], 'doppler':['Doppler',str], 'h2newset':['h2newset',str],
+                     'water':['water_p',float],'ice':['ice_p',float],'nh4sh':['nh4sh_p',float],'nh3ice':['nh3ice_p',float],'h2sice':['h2sice_p',float],'ch4':['ch4_p',float],
+                     'limb':['limb',str]}
         planet = string.capitalize(planet)
         self.planet = planet
         self.verbose=verbose
@@ -42,7 +32,7 @@ class planetConfig:
         self.LP = {'Z':0,'R':1,'P':2,'GM':3,'AMU':4,'REFR':5,'N':6,'H':7,'LAPSE':8,'g':9}    #...and this would hold its dictionary properties
 
         #These are the current config values -- get seeded with help text
-        #   note that the tok values can differ, hence the tok dictionary (although generally just all lowercase)
+        #   note that the tok names largely differ from variable name, hence the tok dictionary (although generally just all lowercase)
         self.gasFile = 'atmospheric constituent file - column order set by C (string)'
         self.gasFileHdr = 'number of header lines (to ignore) in gasFile (int)'
         self.cloudFile = 'atmospheric cloud file - column order set by Cl (string)'
@@ -65,7 +55,7 @@ class planetConfig:
         self.Jn = 'gravity terms (float,float,float,float,float,float)'
         self.omega_m = 'rotation velocity [rad/s] (float)'
         self.zonal = 'file with zonal winds (string)'
-        self.h2newset = 'forget... (bool)'
+        self.h2newset = 'related to h2_orton - can be deprecated? (bool)'
         self.water_p = 'water particle size [um?] (float)'
         self.ice_p = 'ice particle size [um?] (float)'
         self.nh4sh_p = ' nh4sh particle size [um?] (float)'
@@ -73,10 +63,11 @@ class planetConfig:
         self.h2sice_p = 'h2s-ice particle size [um?] (float)'
         self.ch4_p = 'methane particle size [um?] (float)'
         self.Doppler = 'use Doppler or not (bool)'
+        self.limb = 'limb type - used in compute_ds to test limb darkening [shape/sec] (str)'
         if printHelp:
             print 'eventually will print out tok help...'
 
-        self.planetaryDefaults()
+        self.planetaryDefaults()   # this sets to base defaults, which get overwritten if valid config file
         self.setConfig(configFile)
         pars = self.show()
         utils.log(self.logFile,planet,False)
@@ -89,7 +80,6 @@ class planetConfig:
         if configFile == None:
             print 'Atmosphere:  using default config'
             return 0
-        nTokMod = 0
         try:
             fp = open(configFile,'r')
         except IOError:
@@ -97,87 +87,65 @@ class planetConfig:
             return 0
         print 'Reading '+configFile
 
+        nTokMod = 0
         for line in fp:
-            validTok = True
             if line[0] in utils.commentChars or len(line)<4:
                 continue
+            if '#' in line:
+                line = line[:line.index('#')]
             data = line.split()
             tok = data[0].lower()
+            if tok not in self.toks:
+                print 'token %s not found' % (tok)
+                continue
+            nTokMod += 1
+            
             del(data[0])
-            if data[0].lower() == 'none':
-                data[0] = None
-            nTokMod += 1 
+            line = ''
+            for w in data:
+                line+=(w+' ')
+
+            # First pass
+            try:
+                self.__dict__[self.toks[tok][0]] = self.toks[tok][1](data[0])
+            except:
+                self.__dict__[self.toks[tok][0]] = str(data[0])
+            if type(self.__dict__[self.toks[tok][0]]) == str:
+                b = self.__dict__[self.toks[tok][0]].lower()
+                if b == 'none':
+                    self.__dict__[self.toks[tok][0]] = None
+                elif b == 'true':
+                    self.__dict__[self.toks[tok][0]] = True
+                elif b == 'false':
+                    self.__dict__[self.toks[tok][0]] = False
+
+            # Second pass for some
             if tok == 'gasfile':
-                self.gasFile = data[0]
                 try:
-                    self.cloudFileHdr = float(data[1])
+                    self.cloudFileHdr = int(data[1])
                 except:
                     self.cloudFileHdr = 0
             elif tok == 'cloudfile':
-                self.cloudFile = data[0]
                 try:
-                    self.cloudFileHdr = float(data[1])
+                    self.cloudFileHdr = int(data[1])
                 except:
                     self.cloudFileHdr = 0
-            elif tok == 'otherfile':
-                self.otherFile = data[0]
             elif tok == 'constituents':
+                self.C = {}
                 for i,w in enumerate(data):
-                    if w[0] == '#':
-                        break
                     w = w.upper()
                     self.C[w] = i
             elif tok == 'clouds':
+                self.Cl = {}
                 for i,w in enumerate(data):
-                    if w[0] == '#':
-                        break
                     w = w.upper()
                     self.Cl[w] = i
-            elif tok == 'gastype':
-                self.gasType = data[0]
-            elif tok == 'cloudtype':
-                self.cloudType = data[0]
-            elif tok == 'othertype':
-                self.otherType = data[0]
-            elif tok == 'tweakfile':
-                self.tweakFile = data[0]
             elif tok == 'regridtype':
-                s=''
-                for w in data:
-                    if w[0]=='#':
-                        break
-                    else:
-                        s+= w+' '
-                self.regridType = s
+                self.regridType = line
             elif tok == 'pmin':
-                try:
-                    self.pmin = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            inpUnit = utils.processingPressureUnit
-                    except:
-                        inpUnit = utils.processingPressureUnit
-                    self.pmin*= utils.Units[inpUnit]/utils.Units[utils.processingPressureUnit]
-                except:
-                    self.pmin = data[0]
+                self.pmin = self.rescale(self.pmin,data,utils.processingPressureUnit)
             elif tok == 'pmax':
-                try:
-                    self.pmax = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            inpUnit = utils.processingPressureUnit
-                    except:
-                        inpUnit = utils.processingPressureUnit
-                    self.pmax*=utils.Units[inpUnit]/utils.Units[utils.processingPressureUnit]
-                except:
-                    self.pmin = data[0]
-            elif tok == 'omega':
-                try:
-                    self.omega_m = float(data[0])
-                except:
-                    self.omega_m = data[0]
+                self.pmax = self.rescale(self.pmax,data,utils.processingPressureUnit)
             elif tok == 'jn':
                 try:
                     self.Jn = []
@@ -185,149 +153,75 @@ class planetConfig:
                         self.Jn.append( float(d) )
                 except:
                     self.Jn = data[0]
-            elif tok == 'gm':  # #########################################################
-                try:
-                    self.GM_ref = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' not found - assuming '+utils.processingAccelUnit
-                            inpUnit = utils.processingAccelUnit
-                    except:
-                        inpUnit = utils.processingAccelUnit
-                    self.GM_ref*= utils.Units[inpUnit]/utils.Units[utils.processingAccelUnit]
-                except:
-                    self.GM_ref = data[0]
-            elif tok == 'req': #########################################################
-                try:
-                    self.Req = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' no found - assuming '+utils.processingAtmLayerUnit
-                    except:
-                        inpUnit = utils.processingAtmLayerUnit
-                    self.Req*= utils.Units[inpUnit]/utils.Units[utils.processingAtmLayerUnit]
-                except:
-                    self.Req = data[0]
-            elif tok == 'rpol': #########################################################
-                try:
-                    self.Rpol = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' no found - assuming '+utils.processingAtmLayerUnit
-                    except:
-                        inpUnit = utils.processingAtmLayerUnit
-                    self.Rpol*= utils.Units[inpUnit]/utils.Units[utils.processingAtmLayerUnit]
-                except:
-                    self.Rpol = data[0]
-            elif tok == 'distance': #########################################################
-                try:
-                    self.distance = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' no found - assuming '+utils.processingAtmLayerUnit
-                    except:
-                        inpUnit = utils.processingAtmLayerUnit
-                    self.distance*= utils.Units[inpUnit]/utils.Units[utils.processingAtmLayerUnit]
-                except:
-                    self.distance = data[0]
-            elif tok == 'rj': #########################################################
-                try:
-                    self.RJ = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' no found - assuming '+utils.processingAtmLayerUnit
-                    except:
-                        inpUnit = utils.processingAtmLayerUnit
-                    self.RJ*= utils.Units[inpUnit]/utils.Units[utils.processingAtmLayerUnit]
-                except:
-                    self.RJ = data[0]
-            elif tok == 'p_ref': #########################################################
-                try:
-                    self.p_ref = float(data[0])
-                    try:
-                        inpUnit = data[1]
-                        if inpUnit not in utils.Units:
-                            print inpUnit+' no found - assuming '+utils.processingPressureUnit
-                    except:
-                        inpUnit = utils.processingPressureUnit
-                    self.p_ref*= utils.Units[inpUnit]/utils.Units[utils.processingPressureUnit]
-                except:
-                    self.p_ref = data[0]
-            elif tok == 'zonal':
-                self.zonal = data[0]
-            elif tok == 'gtype':
-                self.gtype = data[0]
+            elif tok == 'gm':
+                self.GM_ref = self.rescale(self.GM_ref,data,utils.processingAccelUnit)
+            elif tok == 'req':
+                self.Req = self.rescale(self.Req,data,utils.processingAtmLayerUnit)
+            elif tok == 'rpol':
+                self.Rpol = self.rescale(self.Rpol,data,utils.processingAtmLayerUnit)
+            elif tok == 'distance':
+                self.distance = self.rescale(self.distance,data,utils.processingAtmLayerUnit)
+            elif tok == 'rj':
+                self.RJ = self.rescale(self.RJ,data,utils.processingAtmLayerUnit)
+            elif tok == 'p_ref':
+                self.p_ref = self.rescale(self.p_ref,data,utils.processingPressureUnit)
             elif tok == 'orientation':
                 self.orientation = []
                 try:
                     self.orientation = [float(data[0]),float(data[1])]
                 except:
                     self.orientation = data[0]
-            elif tok == 'h2state':
-                self.h2state = data[0]
             elif tok=='doppler':
-                self.Doppler = False
-                if data[0] in utils.affirmative:
-                    self.Doppler = True
-            elif tok == 'h2newset':
-                if data[0][0].lower() == 'f':
-                    self.h2newset = False
-                else:
-                    self.h2newset = True
-            elif tok=='water':
-                self.water_p = float(data[0])
-                #  should also check for units!!!
-            elif tok=='ice':
-                self.ice_p = float(data[0])
-                #  should also check for units!!!
-            elif tok=='nh4sh':
-                self.nh4sh_p = float(data[0])
-                #  should also check for units!!!
-            elif tok=='nh3ice':
-                self.nh3ice_p = float(data[0])
-                #  should also check for units!!!
-            elif tok=='h2sice':
-                self.h2sice_p = float(data[0])
-                #  should also check for units!!!
-            elif tok=='ch4':
-                self.ch4_p = float(data[0])
-            else:
-                print 'Unknown token:  ',tok
-                nTokMod-=1
+                if type(self.Doppler) is not bool:
+                    if data[0] in utils.affirmative:
+                        self.Doppler = True
+                    else:
+                        self.Doppler = False
+            elif tok=='h2newset':
+                if type(self.h2newset) is not bool:
+                    if data[0] in utils.affirmative:
+                        self.h2newset = True
+                    else:
+                        self.h2newset = False
         fp.close()
 
-        if self.gtype == 'geoid' or self.Doppler:
-            try:
-                filename = os.path.join(self.path,self.zonal)
-                fp = open(filename,'r')
-                self.vwlat = []
-                self.vwdat = []
-                for line in fp:
-                    data = line.split()
-                    self.vwlat.append(float(data[0]))
-                    self.vwdat.append(float(data[1]))
-                fp.close()
-            except IOError:
-                self.vwlat = [0.0,90.0]
-                self.vw.dat = [0.0,0.0]
-        else:
+        try:
+            filename = os.path.join(self.path,self.zonal)
+            fp = open(filename,'r')
+            self.vwlat = []
+            self.vwdat = []
+            for line in fp:
+                data = line.split()
+                self.vwlat.append(float(data[0]))
+                self.vwdat.append(float(data[1]))
+            fp.close()
+        except IOError:
             self.vwlat = [0.0,90.0]
             self.vwdat = [0.0,0.0]
+
         
         return nTokMod
+
+    def rescale(self,v,d,procUnit):
+        inpUnit = procUnit
+        if len(d) > 1:
+            if d[1] in utils.Units:
+                inpUnit = d[1]
+        if type(v) == float:
+            v*= utils.Units[inpUnit]/utils.Units[procUnit]
+        return v       
 
     def show(self):
         """Displays configuration and returns string.  See __init__ and setConfig."""
         s = 'Run parameters:\n'
-        variables =  vars(self)
-        for key in variables:
-            s+='\t%s:  %s\n' %(key,str(variables[key]))
-        print 'CONFIG.PY:360 JUST TO REMIND HOW TO ACCESS VARIABLES ==>',self.__dict__['Doppler']
+        #---Below gives all variables defined in class---
+        #variables =  vars(self)
+        #for key in variables:
+        #    s+='\t%s:  %s\n' %(key,str(variables[key]))
+        keys = self.toks.keys()
+        keys.sort()
+        for key in keys:
+            s+='\t%s:  %s %s\n' % (key, type(self.__dict__[self.toks[key][0]]), str(self.__dict__[self.toks[key][0]]))
         return s
 
     def planetaryDefaults(self):
@@ -359,6 +253,8 @@ class planetConfig:
             self.omega_m = 1.01237195e-4
             self.zonal = 'zonalNeptune.dat'
             self.Doppler = False
+            self.h2newset = True
+            self.limb = 'shape'
         elif self.planet=='Jupiter':
             self.gasFile = 'jupiter.paulSolar'
             self.gasFileHdr = 0
@@ -385,4 +281,6 @@ class planetConfig:
             self.omega_m = 1.7585e-4
             self.zonal = 'Jupiter/zonalJupiter.dat'
             self.Doppler = False
+            self.h2newset = True
+            self.limb = 'shape'
 

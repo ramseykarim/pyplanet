@@ -126,6 +126,9 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     if (b[0]**2 + b[1]**2) > 1.0:
         return path
 
+    if atm.config.limb == 'sec':
+        mu = math.sqrt(1.0 - b[0]**2 - b[1]**2)
+
     f = 1.0 - atm.config.Rpol/atm.config.Req
     tip, rotate = __computeAspect__(orientation,f)
     print 'intersection:  (%.3f, %.3f)    ' % (b[0],b[1]),
@@ -213,6 +216,9 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
                 print 'Error:  ds < 0  (%s:  r.s=%f, ds=%f, [%f,%f])' % (direction,rdots,ds_step,dsp,dsm)
             inAtmosphere = False
             break
+
+        if atm.config.limb == 'sec':  #overwrite ds_step with secant version
+            ds_step = abs(rNextMag - rNowMag)/mu
 
         # append to return arrays
         ds.append(ds_step)

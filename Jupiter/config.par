@@ -24,6 +24,7 @@ Jn       0.0 0.0 1.4697e-2 0.0 -5.84e-4 0.0 0.31e-4
 omega    1.7585e-4
 zonal    zonalJupiter.dat
 gtype    ellipse
+limb     shape
 #
 ### observations
 #--- vanilla
