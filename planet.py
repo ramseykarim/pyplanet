@@ -139,7 +139,7 @@ class planet:
             self.Tb_img = []
             imtmp = []
         for i,bv in enumerate(b):
-            print '%d of %d (view %s)  ' % (i+1,len(b),str(bv)),
+            print '%d of %d (view [%.4f, %.4f])  ' % (i+1,len(b),bv[0],bv[1]),
             Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,isImage=isImg,discAverage=self.discAverage)
             if self.bright.path != None and self.rNorm == None:
                 self.rNorm = self.bright.path.rNorm

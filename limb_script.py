@@ -51,13 +51,15 @@ if genFiles:
     j.run(freqs=freq,b=bv)
 
 else:
-    files = ['jup0shape_Ku.dat','jup45shape_Ku.dat','jup90shape_Ku.dat']
-    files = ['jup45shape_C.dat']
-    colscnv = ['b','r','k']
-    colsnon = ['b--','r--','k--']
+    shapefiles = ['jup0shape_C.dat','jup45shape_C.dat','jup90shape_C.dat']
+    secfiles = ['jup0sec_C.dat','jup45sec_C.dat','jup45sec_C.dat']
+    cols = ['b','r','k','g','y','m']
 
     jdat = []
-    for i,fil in enumerate(files):
+    for i,fil in enumerate(shapefiles):
+
+        # Do shape files
+        label = fil.split('.')[0]
         tmpData = np.loadtxt(fil)
         b = tmpData[:,2]
         b = np.concatenate([-np.flipud(b),b])
@@ -69,13 +71,28 @@ else:
         jdat.append(Ttmp)
         ker = np.exp(-kerexp*b**2)
         ker = ker/np.sum(ker)
-        cnv = scipy.signal.convolve(Ttmp,ker,'same')
+        cnvshape = scipy.signal.convolve(Ttmp,ker,'same')
 
         plt.figure(1)
-        plt.plot(b,cnv,colscnv[i])
-        plt.plot(b,Ttmp,colsnon[i])
-        #plt.axis(xmin=0.0,xmax=1.1)
-        #plt.axis(ymin=50,ymax=210)
+        plt.plot(b,cnvshape,color=cols[i],linestyle='-',label=label)
+
+        # Do sec files
+        label = secfiles[i].split('.')[0]
+        tmpData = np.loadtxt(secfiles[i])
+        b = tmpData[:,2]
+        b = np.concatenate([-np.flipud(b),b])
+        np.delete(b,len(b)/2)
+
+        Ttmp = tmpData[:,3]
+        Ttmp = np.concatenate([np.flipud(Ttmp),Ttmp])
+        np.delete(Ttmp,len(Ttmp)/2)
+        jdat.append(Ttmp)
+        ker = np.exp(-kerexp*b**2)
+        ker = ker/np.sum(ker)
+        cnvsec = scipy.signal.convolve(Ttmp,ker,'same')
+
+        plt.plot(b,cnvsec,color=cols[i],linestyle='--',label=label)
+
 
         plt.figure(2)
         plt.plot(b,ker)

@@ -233,8 +233,8 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
         pclat = (180.0/math.pi)*math.asin( np.dot(rnext,yHat)/np.linalg.norm(rnext) )
         delta_lng = (180.0/math.pi)*math.atan2( np.dot(rnext,xHat), np.dot(rnext,zHat) )
         r2 = geoid.calcShape(atm,req[layer+raypathdir[direction]],pclat,delta_lng)
-        if abs(r2-rNextMag) > 10.0:
-            print 'Warning:  %f != %f (%f km)' % (r2,rNextMag,r2-rNextMag)
+        if abs(r2-rNextMag) > 2.0 and layer!=0:
+            print 'Warning:  %f != %f (%f km) at layer %d' % (r2,rNextMag,r2-rNextMag,layer)
         r.append( rnext )  # which is also geoid.r, or should be 
         n.append( geoid.n )
 
