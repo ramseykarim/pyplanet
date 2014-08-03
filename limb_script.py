@@ -52,7 +52,7 @@ if genFiles:
 
 else:
     shapefiles = ['jup0shape_C.dat','jup45shape_C.dat','jup90shape_C.dat']
-    secfiles = ['jup0sec_C.dat','jup45sec_C.dat','jup45sec_C.dat']
+    secfiles = ['jup0sec_C.dat','jup45sec_C.dat','jup90sec_C.dat']
     cols = ['b','r','k','g','y','m']
 
     jdat = []

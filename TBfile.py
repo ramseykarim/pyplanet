@@ -14,7 +14,6 @@ class TBfile(object):
     def write(self,fn=None,directory=None):
         print "For now, this is done in planet.py starting at line 163"
         print "Eventually pull it over to TBfile.py"
-        print "Also for now, header is a global in planet and planet.header, __set_header__, etc, which should all be part of this"
 
     def flist(self,fd=None,directory=None):
         """This generates the list of filenames to be opened - doesn't check for existence"""
@@ -43,8 +42,10 @@ class TBfile(object):
                 ifile = []
                 for i in sfile:
                     ifile.append(int(i))
-        elif type(fd) == list:
+        elif type(fd) == list and type(fd[0]) == int:
             ifile = fd
+        elif type(fd) == list and type(fd[0]) == str:
+            files = fd
         else:
             get_fn = False
             files = [fd]
@@ -82,21 +83,19 @@ class TBfile(object):
 
             ## Get past any header and get first line
             line ='# file:  '+filename+'\n'
-            while line[0]=='#':
-                headerText.append(line)
-                if 'img_size' in line:
-                    self.ftype = 'img'
-                line = fp.readline()
-            if line[0] == 'U':
-                self.ftype = 'spec'
-                spec_b = line
-            print '=============Header (need to update to use img.parseHeader)============'
-            for hdr in headerText:
-                print hdr,
-            print '\n\n'
+            for line in fp:
+                if line[0]=='#':
+                    headerText.append(line)
+                    if 'img_size' in line:
+                        self.ftype = 'img'
+                    line = fp.readline()
+                if line[0] == 'U':
+                    self.ftype = 'spec'
+                    spec_b = line
             fp.close()
         self.parseHeader(headerText)
-
+        
+        ### Second pass reads the data, split into 'img' and 'spec' types
         if self.ftype == 'img':
             imRow = imCol = 0
             data = []
@@ -127,42 +126,45 @@ class TBfile(object):
             self.y = np.array(self.y)
         elif self.ftype == 'spec':
             bvals = []
-            labels = line.split()
-            xlabel = labels[0]
-            del(labels[0])
-            print 'b = ',
-            for b in labels:
-                print ' '+b,
-                bb = b.split('(')[1].strip(')').split(',')
-                bb = [float(bb[0]),float(bb[1])]
-                bvals.append(bb)
-            b = np.array(bvals)
-            print ''
-            ylabels = labels
-
-            ## Rest of data
-            print '>>>>>>>>>>>>>>>>wavelength assumes cm/GHz for now<<<<<<<<<<<<<<<<'
+            indata = []
             f = []
-            Tb = []
-            n = 0
             wavel = []
-            global funit
-            for line in fp:
-                data = line.split()
-                f.append(float(data[0]))
-                wavel.append((speedOfLight/1E7)/float(data[0]))
-                del(data[0])
-                t = []
-                for d in data:
-                    t.append(float(d))
-                Tb.append(t)
-                n+=1
-            Tb = np.array(Tb).transpose()
-            f = np.array(f)
-            wavel = np.array(wavel)
+            n = 0
+            for filename in self.files:
+                fp = open(filename,'r')
+                for line in fp:
+                    if line[0] == '#':
+                        continue
+                    if line[0] == 'U':
+                        labels = line.split()
+                        xlabel = labels[0]
+                        del(labels[0])
+                        print 'b = ',
+                        for b in labels:
+                            print ' '+b,
+                            bb = b.split('(')[1].strip(')').split(',')
+                            bb = [float(bb[0]),float(bb[1])]
+                            bvals.append(bb)
+                        b = np.array(bvals)
+                        print ''
+                        ylabels = labels
+                        continue
+                    indata = line.split()
+                    f.append(float(indata[0]))
+                    wavel.append((speedOfLight/1E7)/float(indata[0]))
+                    del(indata[0])
+                    t = []
+                    for d in indata:
+                        t.append(float(d))
+                    data.append(t)
+                    n+=1
+                fp.close()
+            self.data = np.array(indata).transpose()
+            self.f = np.array(f)
+            self.wavel = np.array(wavel)
             print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
-
-
+    
+    
     def parseHeader(self, headerText):
         """Parses the pyPlanet image header"""
         for hdr in headerText:
@@ -188,6 +190,7 @@ class TBfile(object):
                     h = [None]
             if updateKey:
                 self.header[hdrkey] = h
+                self.__dict__[hdrkey] = h
         ### set any header-derived values
         if self.header.has_key('res'):
             self.resolution = self.header['res'][0]   # keep this for backward compatibility
