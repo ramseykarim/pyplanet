@@ -9,9 +9,14 @@ import sys
 import numpy as np
 import utils
 import config as pcfg
+try:
+    pyPlanetPath = os.getenv('PYPLANETPATH')
+except:
+    print 'No PYPLANETPATH environment variable'
+    pyPlanetPath = './'
 
 class alpha:
-    def __init__(self,path='/Users/daviddeboer1/Documents/Projects/Planets/pyPlanet/',config=None,log=None,verbose=False,plot=False):
+    def __init__(self,path=None,config=None,log=None,verbose=False,plot=False):
         """Reads in absorption formalisms
            Note that they are all in GHz"""
 
@@ -21,8 +26,10 @@ class alpha:
         print '\n---Alpha---\n'
             
         #Get possible constituents
+        if path is None:
+            path = pyPlanetPath
         possible = []
-        self.constituentsAreAt=path+'constituents'
+        self.constituentsAreAt=os.path.join(path,'constituents')
         utils.log(self.log,'Reading in absorption modules from '+self.constituentsAreAt+'\n',True)
         for d in os.listdir(self.constituentsAreAt):
             fnd = os.path.join(self.constituentsAreAt,d)

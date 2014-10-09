@@ -51,7 +51,7 @@ if genFiles:
     j.run(freqs=freq,b=bv)
 
 else:
-    shapefiles = ['jup0shape_C.dat','jup45shape_C.dat','jup90shape_C.dat']
+    shapefiles = ['jup0shape_C.dat']#,'jup45shape_C.dat','jup90shape_C.dat']
     secfiles = ['jup0sec_C.dat','jup45sec_C.dat','jup90sec_C.dat']
     cols = ['b','r','k','g','y','m']
 
@@ -66,6 +66,7 @@ else:
         np.delete(b,len(b)/2)
 
         Ttmp = tmpData[:,3]
+        centerTemp = Ttmp[0]
         Ttmp = np.concatenate([np.flipud(Ttmp),Ttmp])
         np.delete(Ttmp,len(Ttmp)/2)
         jdat.append(Ttmp)
@@ -76,6 +77,15 @@ else:
         plt.figure(1)
         plt.plot(b,cnvshape,color=cols[i],linestyle='-',label=label)
 
+        # Do power law version
+        g = np.where(abs(b) < 1.0)
+        costh = np.zeros(np.shape(b))
+        costh[g] = np.sqrt(1.0 - b[g]**2)**0.16
+        scTmp = centerTemp*costh
+        cnvshape = scipy.signal.convolve(scTmp,ker,'same')
+#        plt.plot(b,cnvshape,color='g',linewidth=4)
+        plt.plot(b,scTmp,color='g',linewidth=4)
+
         # Do sec files
         label = secfiles[i].split('.')[0]
         tmpData = np.loadtxt(secfiles[i])
@@ -83,16 +93,22 @@ else:
         b = np.concatenate([-np.flipud(b),b])
         np.delete(b,len(b)/2)
 
-        Ttmp = tmpData[:,3]
-        Ttmp = np.concatenate([np.flipud(Ttmp),Ttmp])
-        np.delete(Ttmp,len(Ttmp)/2)
-        jdat.append(Ttmp)
+        sTtmp = tmpData[:,3]
+        sTtmp = np.concatenate([np.flipud(sTtmp),sTtmp])
+        np.delete(sTtmp,len(sTtmp)/2)
+        jdat.append(sTtmp)
         ker = np.exp(-kerexp*b**2)
         ker = ker/np.sum(ker)
-        cnvsec = scipy.signal.convolve(Ttmp,ker,'same')
+        cnvsec = scipy.signal.convolve(sTtmp,ker,'same')
 
         plt.plot(b,cnvsec,color=cols[i],linestyle='--',label=label)
-
+	plt.plot(b,scTmp,color='g')
 
         plt.figure(2)
         plt.plot(b,ker)
+
+        # Plot unconvolved versions
+        plt.figure(3)
+        plt.plot(b,Ttmp)
+        plt.plot(b,scTmp)
+        plt.plot(b,sTtmp)
