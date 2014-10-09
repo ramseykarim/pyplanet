@@ -13,7 +13,7 @@ import TBfile
 
 class Img:
     def __init__(self,i='?',readAndPlot=True):
-        self.TB = TBfile.TBfile('.')
+        self.TB = TBfile.TBfile('Output')
         self.kerneled = False
         self.kernel = None
         self.convolved = False

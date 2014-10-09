@@ -198,10 +198,10 @@ Then it forks based on whether you want to make images or spectra at a set of lo
 	\begin{itemize}
 	\item[$\bowtie$] float - this will generate a grid with the given spacing as set by the block.  It sets \texttt{isImg = True} if there is only one frequency.  Otherwise it is a lot of spectra and no image.  It will extend $\pm 1.5$ to give some "empty space" around the planet, but this is quick, since they'll miss.
 	\item[$\bowtie$] list of length 2 (doublet list) - this will assume one given location on the face (e.g. \texttt{[-0.1,0.1]})
-	\item[$\bowtie$] list of length other than 2 (but not 9,25,36,49,64) - this will assume that you want a line of those values at an angle given by the first term (in degrees - 0 is equator)
-	\item[$\bowtie$] any string (typically the word 'disc') - disc averaged value
-	\item[$\bowtie$] otherwise it assumes a list of locations (list of doublet lists, e.g. \texttt{[[-0.1,-0.1], }\texttt{[0.0,0.0], }\texttt{[0.1,0.1]]}), unless...
-	\item[$\bowtie$] len(b) is 9, 16, 25, 36, 49, 64 it assumes a square sub-image and must be a list of doublet lists.  Sets \texttt{isImg=True}.  There is no checking of this, so will fail if improperly specified.  {\em Caveat emptor}.
+	\item[$\bowtie$] list of length > 2  this will assume that you want a line of those values at an angle given by the first term (in degrees - 0 is equator)
+	\item[$\bowtie$] 'disc' - disc averaged value
+	\item[$\bowtie$] 'stamp' - postage stamp, query for values
+	\item[$\bowtie$] otherwise it assumes a list of locations (list of doublet lists, e.g. \texttt{[[-0.1,-0.1], }\texttt{[0.0,0.0], }\texttt{[0.1,0.1]]})
 	\end{itemize}
 \item[$\rightarrow$]  \texttt{freqUnit}:  string specifying the unit, default to 'GHz' (and hopefully if not, it correctly propagates through...)
 \item[$\rightarrow$]  \texttt{orientation}:  doublet list that sets the orientation of the planet (typically to match an observation).

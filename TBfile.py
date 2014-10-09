@@ -21,7 +21,7 @@ class TBfile(object):
             usedir = directory
         else:
             usedir = self.directory
-        file_list = utils.ls(directory=usedir, show=True, returnList=True)
+        file_list = utils.ls(directory=usedir, show=False, returnList=True)
 
         get_fn = True
         files = []
@@ -88,7 +88,7 @@ class TBfile(object):
                     headerText.append(line)
                     if 'img_size' in line:
                         self.ftype = 'img'
-                    line = fp.readline()
+                    #line = fp.readline()
                 if line[0] == 'U':
                     self.ftype = 'spec'
                     spec_b = line

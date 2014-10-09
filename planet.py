@@ -29,12 +29,10 @@ class planet:
                 b: 'impact parameter' b=1 is the radius of the maximum projected disc
                     - doublet list is one position, [0,0] is the center
                     - float will generate a grid at that spacing, may need to set blocks during run
-                    - list of length > 2, assumes a line of those locations along the equator
-                    - any string (typically 'disc') for disc-averaged
+                    - list of length > 2, assumes a line of those locations at angle of first entry (deg)
+                    - 'disc' for disc-averaged
+                    - 'stamp' for postage stamp (queries values)
                     - list of doublet lists, evaluate at those locations
-                    - any list of length greater than 8.  It should be a list of doublet lists.
-                      This assumes a length of perfect squares (9, 16, 25, 36) and interprets that as
-                      a sub-image at those locations (b-doublets).  Should do more checking on this...
                freqUnit: unit for above
                config:  config file name [config.par], 'manual' [equivalent none]
                log:  log data from run, either a file name, a 'no', or 'auto' (for auto filename)
@@ -95,7 +93,7 @@ class planet:
         self.atm.run()
         self.log.flush()
 
-    def run(self, freqs=[1.0,10.0,1.0], b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None):
+    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None):
         """Runs the model to produce the brightness temperature, weighting functions etc etc
            b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)"""
         if freqs == None and freqUnit == None:
@@ -244,7 +242,13 @@ class planet:
         b=self.__bRequest__(b,block)
         return b
     def __bRequest__(self,b,block):
-        allowedSubImage = [9,16,25,36,49,64]
+        """b has a number of options for different bType:
+               'points':  discrete number of points
+               'line':  radial lines
+               'image':  full image
+               'stamp':  small image of region
+               'disc':  disc-averaged"""
+        self.bType = None
         self.discAverage = False
         printOutb = False
         try:
@@ -254,8 +258,10 @@ class planet:
             print 'Error in __bRequest__ at line 242'
             printOutb = False
         self.header['b'] ='# b request:  '+str(b)+'  '+str(block)+'\n'
+        
         self.imRow = None
         if type(b) == float:  ## this generates a grid at that spacing and blocking
+            self.bType = 'image'
             pb = []
             grid = -1.0*np.flipud(np.arange(b,1.5+b,b))
             grid = np.concatenate( (grid,np.arange(0.0,1.5+b,b)) )
@@ -272,22 +278,59 @@ class planet:
             b = pb
             self.imRow = len(grid)
         elif type(b) == str:     ## this assumes a disc averaged value is desired
-            b = [[0.0,0.0]]
-            self.discAverage = True
-            print 'Setting to disc-average'
+            if b.lower() == 'disc':
+                b = [[0.0,0.0]]
+                self.bType = 'disc'
+                self.discAverage = True
+                print 'Setting to disc-average'
+            elif b.lower() == 'stamp':
+                self.bType = 'stamp'
+                print 'Setting to postage stamp'
+                try:
+                    bres = float(raw_input('...Input postage stamp resolution in b-units:  '))
+                except ValueError:
+                    bres = None
+                bxmin,bxmax = raw_input('...Input bx_min, bx_max:  ').split(',')
+                try:
+                    bxmin = float(bxmin)
+                    bxmax = float(bxmax)
+                except ValueError:
+                    bres = None
+                bymin,bymax = raw_input('...Input by_min, by_max:  ').split(',')
+                try:
+                    bymin = float(bymin)
+                    bymax = float(bymax)
+                except ValueError:
+                    bres = None
+                if bres:
+                    pb = []
+                    for x in np.arange(bxmin,bxmax+bres/2.0,bres):
+                        for y in np.arange(bymin,bymax+bres/2.0,bres):
+                            pb.append([y,x])
+                    b = pb
+                    self.imRow = len(np.arange(bymin,bymax+bres/2.0,bres))
+            else:
+                self.bType = b
+                b = None
         elif len(np.shape(b)) == 1:     ## this makes:
             pb = []
             if len(b) == 2:
+                self.bType = 'points'
                 pb.append(b)            ##...data at one location
             else:
+                self.bType = 'line'
                 angle = b[0]*math.pi/180.0
                 del b[0]
                 for v in b:
                     pb.append([v*math.cos(angle),v*math.sin(angle)])  ##...a line at given angle (angle is first entry)
             b = pb
         else:
-            if len(b) in allowedSubImage:  ###This does a sub-image at those b locations
-                self.imRow = int(math.sqrt(len(b)))
+            self.bType = b
+            b = None
+        if not b:
+            print 'Invalid bType:  ',self.bType
+        else:
+            print 'bType = '+self.bType
         self.b = b
         if printOutb:
             print '---------------------------------------------------------'
