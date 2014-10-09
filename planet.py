@@ -14,7 +14,7 @@ import datetime
 import os.path
 import TBfile
 
-version = 'pre-release'
+version = '0.5'
 
 class planet:
     def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbose=False, plot=True):
@@ -50,6 +50,7 @@ class planet:
 
         print 'Planetary modeling  (ver '+version+')\n'
         print "PLANET.PY_L51:  In alpha, clouds_idp need otherPar['refr'] - still?"
+
 
         ### Set up log file
         if string.lower(log)=='auto':
@@ -87,7 +88,7 @@ class planet:
         ### Get config
         if config == 'manual' or config=='none':
             config = None
-        self.config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
+        self.config = pcfg.planetConfig(self.planet,configFile=config,log=self.log,verbose=verbose)
 
         ### Create atmosphere:  outputs are self.atm.gas, self.atm.cloud and self.atm.layerProperty
         self.atm = atm.Atmosphere(self.planet,config=self.config,log=self.log,verbose=verbose,plot=plot)

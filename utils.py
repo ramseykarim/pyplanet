@@ -40,7 +40,7 @@ def setupLogFile(log,path='Logs/'):
         except IOError:
             print lf+' not found.  No logging (and save the whales).'
             return None
-        print 'Logging to '+lf
+        print 'setup Log:  Logging to '+lf
     else:
         log = None
         logfp = None

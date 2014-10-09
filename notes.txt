@@ -1,0 +1,23 @@
+Before you start:
+	make sure the Jupiter/config.par file is accurate 
+	make sure the gas/cloud files exist
+        make sure that Jupiter/JupiterTweak.py is what you think it is
+	use.py to confirm which constituents are being used 
+		use.py --nh3 to toggle e.g. nh3
+
+start ipython --pylab (you set the alias ipy for that)
+
+import planet
+j = planet.planet('jupiter')
+j.run(freqs=..., b=...)
+
+time-stamped data file is written to Output and log file to Logs
+
+options for freqs:
+	freqs = 1.42    ==> single frequency at 1.42 GHz
+	freqs = [1,4,1]  ==> (i.e. three values within []) interprets as start,stop,step
+	freqs = [1.4,2.5,5.5,8.4,12.1]  ==> (i.e. a list within [] of length other than 3) runs at those frequencies
+	freqs = 'freq.dat'   ==> (string within '') reads in those frequencies, one per line
+
+
+options for b:
