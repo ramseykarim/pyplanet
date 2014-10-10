@@ -154,6 +154,7 @@ class planet:
             self.bright.layerAbsorption(freqs,self.atm,self.alpha)
         self.Tb=[]
         hit_b=[]
+        btmp = ''
         self.rNorm = None; self.tip = None; self.rotate = None
         if self.outType == 'Image':  ##We now treat it as an image at one frequency
             print 'imgSize = %d x %d' % (self.imSize[0], self.imSize[1])
@@ -166,7 +167,7 @@ class planet:
             
         for i,bv in enumerate(b):
             print '%d of %d (view [%.4f, %.4f])  ' % (i+1,len(b),bv[0],bv[1]),
-            Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,isImage=isImg,discAverage=self.discAverage)
+            Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,plot=not(self.outType=='Image'),discAverage=(self.bType=='disc'))
             if self.bright.path != None and self.rNorm == None:
                 self.rNorm = self.bright.path.rNorm
             if self.bright.path != None and self.tip == None:
@@ -186,7 +187,7 @@ class planet:
         self.log.flush()
 
         ###Write output files (this needs to be compatible with TBfile  -- eventually should incorporate it in there###
-        datFile = 'Output/%s_%s%s_%s_%d%02d%02d_%02d%02d.dat' % (self.planet,self.outType,btmp,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
+        datFile = 'Output/%s_%s%s_%d%02d%02d_%02d%02d.dat' % (self.planet,self.outType,btmp,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
         print '\nWriting image data to ',datFile
         df = open(datFile,'w')
         self.__setHeader__(self.rNorm)
@@ -199,9 +200,10 @@ class planet:
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Spectrum':
-            s = 'U GHz \tK@km'
+            s = 'GHz \tK@km'
             for i,bv in enumerate(hit_b):
                 s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
+            s.strip('\t')
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
@@ -211,7 +213,18 @@ class planet:
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Profile':
-            print 'Need to incorporate profile output...'
+            s = 'b \t GHz'
+            for i,fv in enumerate(freqs):
+                s+='%.4f\t' % (fv)
+            s.strip('\t')
+            s+='\n'
+            df.write(s)
+            for i,bv in enumerate(hit_b):
+                s = '%.3f %.3f\t' % (bv[0],bv[1])
+                for j in range(len(freqs)):
+                    s+=' %.4f\t ' % (self.Tb[i][j])
+                s+='\n'
+                df.write(s)
         else:
             print 'Invalid outType:  '+self.outType
         df.close()
@@ -223,9 +236,6 @@ class planet:
             self.header['aspect'] = '# aspect tip, rotate not set\n'
             self.header['rNorm'] = '# rNorm not set\n'
         else:
-            resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.config.distance)
-            print 'resolution = ',resolution
-            self.header['res'] = '# res:  %f arcsec\n' % (resolution)
             self.header['orientation'] = '# orientation:   %s\n' % (repr(self.config.orientation))
             self.header['aspect'] = '# aspect tip, rotate:  %.4f  %.4f\n' % ((180.0/math.pi)*self.tip, (180.0/math.pi)*self.rotate)
             self.header['rNorm'] = '# rNorm: %f\n' % self.rNorm
@@ -235,6 +245,9 @@ class planet:
                 self.header['outType'] = '# outType:  %s\n' % (self.outType)
                 if self.outType == 'Image':
                     self.header['imgSize'] = '# imgSize: %.0f, %.0f\n' % (self.imRow,self.imCol)
+                    resolution = (180.0/math.pi)*3600.0*math.atan(abs(self.b[1][0]-self.b[0][0])*self.rNorm/self.config.distance)
+                    print 'resolution = ',resolution
+                    self.header['res'] = '# res:  %f arcsec\n' % (resolution)
         self.header['gtype'] = '# gtype: %s\n' % (self.config.gtype)
         self.header['radii'] = '# radii:  %.1f  %.1f  km\n' % (self.config.Req,self.config.Rpol)
         self.header['distance'] = '# distance:  %f km\n' % (self.config.distance)

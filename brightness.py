@@ -55,11 +55,13 @@ class brightness():
         print ' '
         return layerAlp 
 
-    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, isImage=False, discAverage=False, normW4plot=True):
+    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, plot= None, verbose = None, discAverage = False, normW4plot=True):
         """This computes the brightness temperature along one ray path"""
 
-        verbose = self.verbose
-        plot = self.plot
+        if verbose is None:
+            verbose = self.verbose
+        if plot is None:
+            plot = self.plot
         # get path lengths (ds_layer) vs layer number (num_layer) - currently frequency independent refractivity
         self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbose=verbose,plot=plot)
         if self.path.ds == None:
@@ -139,8 +141,6 @@ class brightness():
         self.W = np.array(self.W).transpose()
         self.Tb_lyr = np.array(self.Tb_lyr).transpose()
 
-        if isImage:
-            plot = False
         if plot:
             # save a local copy of
             self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
