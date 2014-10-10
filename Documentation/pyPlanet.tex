@@ -35,6 +35,15 @@ pyPlanet is a modular open-source planetary atmospheric radiative transfer code 
 \item constituents
 \end{itemize}
 
+Specifics of running the code are discussed in Section \ref{recipes}.  Other than the generated plots (and the data contained within the python class during runtime), the primary output is a file saved in the Output subdirectory named for the planet, type and date/time as {\tt Planet\_Type\_YYYYMMDD\_HHMM.dat}.
+
+There are three basic output types:
+\begin{enumerate}
+	\item spec - standard spectrum at one or more pointings
+	\item profile - a radial profile at one or more frequencies
+	\item image - an image at one frequency
+\end{enumerate}
+
 \section{Configuration File}
 The program reads in a configuration file from the appropriate planet directory (Jupiter or Neptune for now) called 'config.par'.  It consists of keywords (tokens) followed by value(s).  Characters from a \# to the end of the line are ignored.
 Below is an example, followed by a discussion of each keyword.
@@ -87,7 +96,7 @@ ch4  1.0E-4
 \subsubsection{gasfile} 
 jupiter.paulSolar 1
 
-\subsubsection{constituents} 
+\subsubsection{Constituents} 
 Z T P H2 HE CH4 NH3 H2O H2S SOLN OTHER PH3 CO CO13 HCN DZ
 
 \subsection{Clouds}
@@ -148,7 +157,12 @@ This is the type of shape to be used.  Options are:
 \subsubsection{orientation}
 0.0 0.0 deg
 
-\subsection{Alpha}
+\subsection{Opacity Formalisms}
+Whether to use the opacity and which formalism to use is set by a file called {\tt use.txt} in the appropriate sub-directory.  The name of the desired Python module (without the .py) is the first line of that file.  Currently this is just hand edited.  To not use it at all, currently you just rename that file nouse.txt.
+
+A script called {\tt use.py} will show if and which formalism and will toggle a given constituent off or on.  Typing {\tt use.py} will show a list and typing {\tt use.py --}{\em constituent} (where {\em constituent} is {\em e.g.} nh3, h2s, ...) will toggle it off or on.
+
+
 \subsubsection{doppler}
 0
 
@@ -177,6 +191,7 @@ e
 1.0E-4
 
 \section{Recipes}
+\label{recipes}
 This section provides some recipes to generate and analyze data.  Common to all of them are setting up and loading the class.  It assumes a file named \texttt{config.par} in the appropriate planet directory (e.g. Neptune).  It also assumes that the use.txt files under \texttt{constituents} are properly set.  See the help listings for details on the other parameters that are available.
 \begin{enumerate}
 \item Make sure the config.par file is correct
