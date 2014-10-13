@@ -62,23 +62,40 @@ class TBfile(object):
            fn = filename to read (but then ignores directory) | '?', '.' or None | integer [None]
            directory = subdirectory for data (not used if filename given) ['Output']"""
 
-        if directory is not None:
-            usedir = directory
+        ftypes = ['Image','Profile','Spectrum']
+        if fd is None:
+            if directory is not None:
+                usedir = directory
+            else:
+                usedir = self.directory
+            try_files = self.flist(fd,usedir)
         else:
-            usedir = self.directory
-        try_files = self.flist(fd,usedir)
+            try_files = fd
 
         ### Read in two passes:  first header
         self.ftype = None
         headerText = []
         self.files = []
-        for filename in try_files:
+        self.ftype = 'Unknown'
+        for i,filename in enumerate(try_files):
             try:
                 fp = open(filename,'r')
             except IOError:
                 print filename+" not found - removing from list"
                 continue
-            print "Reading "+filename
+            for ff in ftypes:
+                if ff in filename:
+                    self.ftype = ff
+                    break
+            if not i:
+                overallType = self.ftype
+                print 'File type:  '+overallType
+            else:
+                if self.ftype != overallType:
+                    print self.ftype+' not of type '+overallType+' - removing from list'
+                    continue
+
+            print "\tReading "+filename
             self.files.append(filename)
 
             ## Get past any header and get first line
@@ -86,16 +103,11 @@ class TBfile(object):
             for line in fp:
                 if line[0]=='#':
                     headerText.append(line)
-                    if 'img_size' in line:
-                        self.ftype = 'img'
-                    #line = fp.readline()
-                if line[0] == 'U':
-                    self.ftype = 'spec'
-                    spec_b = line
             fp.close()
         self.parseHeader(headerText)
+        return 0
         
-        ### Second pass reads the data, split into 'img' and 'spec' types
+        ### Now we have valid files and the header, now read in ftype
         if self.ftype == 'img':
             imRow = imCol = 0
             data = []

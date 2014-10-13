@@ -1,4 +1,4 @@
-###This is the 'executive' class for planets
+      ###This is the 'executive' class for planets
 import math
 import string
 import matplotlib.pyplot as plt
@@ -30,6 +30,7 @@ class planet:
                     - doublet list is one position, [0,0] is the center
                     - float will generate a grid at that spacing, may need to set blocks during run
                     - list of length > 2, assumes a line of those locations at angle of first entry (deg)
+                         if the length is four it assumes [angle,start,stop,step]
                     - 'disc' for disc-averaged
                     - 'stamp' for postage stamp (queries values)
                     - list of doublet lists, evaluate at those locations
@@ -200,31 +201,42 @@ class planet:
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Spectrum':
-            s = 'GHz \tK@km'
+            s = '# GHz \tK@km '
             for i,bv in enumerate(hit_b):
                 s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
             s.strip('\t')
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
-                s = '%.9f\t' % (f)
+                s = '%.9f\t  ' % (f)
                 for j in range(len(hit_b)):
                     s+='  %.2f\t  ' % (self.Tb[j][i])
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Profile':
-            s = 'b \t GHz'
+            s = '# b \t K@GHz '
             for i,fv in enumerate(freqs):
                 s+='%.4f\t' % (fv)
             s.strip('\t')
             s+='\n'
             df.write(s)
+            bs = []
             for i,bv in enumerate(hit_b):
                 s = '%.3f %.3f\t' % (bv[0],bv[1])
+                bs.append(math.sqrt(bv[0]**2 + bv[1]**2))
                 for j in range(len(freqs)):
                     s+=' %.4f\t ' % (self.Tb[i][j])
                 s+='\n'
                 df.write(s)
+            if plot:
+                plt.figure("Profile")
+                Tbtr = np.transpose(self.Tb)
+                for j in range(len(freqs)):
+                    frqs = ('%.2f %s' % (self.freqs[j],self.freqUnit))
+                    plt.plot(bs,Tbtr[j],label=frqs)
+                plt.legend()
+                plt.xlabel('b')
+                plt.ylabel('$T_B$ [K]')
         else:
             print 'Invalid outType:  '+self.outType
         df.close()
@@ -334,6 +346,8 @@ class planet:
                 self.outType = 'Profile'
                 angle = b[0]*math.pi/180.0
                 del b[0]
+                if len(b) == 3:
+                    b = np.arange(b[0],b[1]+b[2]/2.0,b[2]) ##...this generates the points as start,stop,step
                 for v in b:
                     pb.append([v*math.cos(angle),v*math.sin(angle)])  ##...a line at given angle (angle is first entry)
             b = pb

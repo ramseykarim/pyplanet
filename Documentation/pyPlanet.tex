@@ -211,6 +211,26 @@ Then it forks based on whether you want to make images or spectra at a set of lo
 	\end{itemize}
 \item[$\rightarrow$] \texttt{b}:  "impact parameter" on the planet face.  [0,0] is center of the projected face.  It is scaled such that $|$b$|$=1 corresponds to the maximum equatorial radius of the projected face.
 	\begin{itemize}
+	\item[$\bowtie$] Output is "Image"
+		\begin{itemize}
+               	\item b = 0.1  == generates a full image at that resolution (see blocks)
+		\item b = 'stamp' == generates a small image (queries for extents)
+                	\end{itemize}
+        \item[$\bowtie$] Output is "Spectrum"
+        		\begin{itemize}
+             	\item b = [[0.0,0.0],[0.1,0.0],...]  == generates at listed points
+             	\item b = [0.0,0.0] == same as above at that one point
+             	\item b = 'disc' == disc-averaged brightness temperature
+		\end{itemize}
+        \item[$\bowtie$] Output is "Profile"
+	        \begin{itemize}
+               	\item b = [45.0,0.0,0.1,0.2,0.3,0.4,0.5,0.9,0.95] ==> generates a line at angle of first term (45deg) at magnitude of rest
+              	\item b = [45.0,0.0,1.0,0.02]  ==> if length is 4, it assumes start, stop, step for last three
+		\end{itemize}
+	\end{itemize}
+
+OLD VERSION OF DISCUSSION
+	\begin{itemize}
 	\item[$\bowtie$] float - this will generate a grid with the given spacing as set by the block.  It sets \texttt{isImg = True} if there is only one frequency.  Otherwise it is a lot of spectra and no image.  It will extend $\pm 1.5$ to give some "empty space" around the planet, but this is quick, since they'll miss.
 	\item[$\bowtie$] list of length 2 (doublet list) - this will assume one given location on the face (e.g. \texttt{[-0.1,0.1]})
 	\item[$\bowtie$] list of length > 2  this will assume that you want a line of those values at an angle given by the first term (in degrees - 0 is equator)
