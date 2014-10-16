@@ -125,12 +125,13 @@ class planet:
             b = self.b
         else:
             b = self.__bRequest__(b,block)
-        if self.outType is None:
+        if self.outType is None or self.outType == 'Spectrum' or self.outType == 'Profile':
             if len(freqs)>len(b):
                 self.outType = 'Spectrum'
             else:
                 self.outType = 'Profile'
         self.b = b
+        print 'outType = '+self.outType
         if self.outType == 'Image' and len(freqs) > 1:
             print 'Image must be at only one frequency'
             print 'Using %f %s' % (freqs[0],self.freqUnit)
@@ -189,7 +190,7 @@ class planet:
 
         ###Write output files (this needs to be compatible with TBfile  -- eventually should incorporate it in there###
         datFile = 'Output/%s_%s%s_%d%02d%02d_%02d%02d.dat' % (self.planet,self.outType,btmp,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
-        print '\nWriting image data to ',datFile
+        print '\nWriting '+self.outType+' data to ',datFile
         df = open(datFile,'w')
         self.__setHeader__(self.rNorm)
         self.__writeHeader__(df)
@@ -197,35 +198,35 @@ class planet:
             for data0 in self.Tb_img:
                 s = ''
                 for data1 in data0:
-                    s+= '%.4f\t' % (data1)
+                    s+= '%7.2f\t' % (data1)
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Spectrum':
-            s = '# GHz \tK@km '
+            s = '# GHz  K@b  \t'
             for i,bv in enumerate(hit_b):
-                s+='(%.0f,%.0f)\t' % (self.rNorm*bv[0],self.rNorm*bv[1])
+                s+='(%5.3f,%5.3f)\t' % (bv[0],bv[1])
             s.strip('\t')
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
                 s = '%.9f\t  ' % (f)
                 for j in range(len(hit_b)):
-                    s+='  %.2f\t  ' % (self.Tb[j][i])
+                    s+='  %7.2f  \t' % (self.Tb[j][i])
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Profile':
-            s = '# b \t K@GHz '
+            s = '# b  K@GHz \t'
             for i,fv in enumerate(freqs):
-                s+='%.4f\t' % (fv)
+                s+='  %9.4f   \t' % (fv)
             s.strip('\t')
             s+='\n'
             df.write(s)
             bs = []
             for i,bv in enumerate(hit_b):
-                s = '%.3f %.3f\t' % (bv[0],bv[1])
+                s = '%5.3f %5.3f\t' % (bv[0],bv[1])
                 bs.append(math.sqrt(bv[0]**2 + bv[1]**2))
                 for j in range(len(freqs)):
-                    s+=' %.4f\t ' % (self.Tb[i][j])
+                    s+=' %7.2f\t ' % (self.Tb[i][j])
                 s+='\n'
                 df.write(s)
             if plot:
@@ -356,10 +357,8 @@ class planet:
             self.outType = None
             b = None
         if not b:
-            print 'Invalid bType:  ',self.bType
+            print 'Invalid bType ('+self.bType+'), but soldiering on'
             self.bType = None
-        else:
-            print 'bType = '+self.bType
         self.b = b
         return b
     

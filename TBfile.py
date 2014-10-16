@@ -108,7 +108,7 @@ class TBfile(object):
         return 0
         
         ### Now we have valid files and the header, now read in ftype
-        if self.ftype == 'img':
+        if self.ftype == 'Image':
             imRow = imCol = 0
             data = []
             for filename in self.files:
@@ -119,6 +119,8 @@ class TBfile(object):
                     imRow+=1
                     vdat = []
                     sdat = line.split()
+                    if len(sdat) < 2:
+                        continue
                     imCol = 0
                     for v in sdat:
                         imCol+=1
@@ -136,7 +138,7 @@ class TBfile(object):
                 self.y.append(self.xyextents[2] + i*self.resolution)
             self.x = np.array(self.x)
             self.y = np.array(self.y)
-        elif self.ftype == 'spec':
+        elif self.ftype == 'Spectrum' or self.ftype == 'Profile':
             bvals = []
             indata = []
             f = []
@@ -146,20 +148,25 @@ class TBfile(object):
                 fp = open(filename,'r')
                 for line in fp:
                     if line[0] == '#':
-                        continue
-                    if line[0] == 'U':
                         labels = line.split()
-                        xlabel = labels[0]
-                        del(labels[0])
-                        print 'b = ',
-                        for b in labels:
-                            print ' '+b,
-                            bb = b.split('(')[1].strip(')').split(',')
-                            bb = [float(bb[0]),float(bb[1])]
-                            bvals.append(bb)
-                        b = np.array(bvals)
-                        print ''
-                        ylabels = labels
+                        xlabel = labels[1]
+                        ylabel = labels[2].split('@')[1]
+                        del(labels[0:3])
+                        curveLabels = labels
+                        if 'K@km' in line:
+                            print 'b = ',
+                            for b in labels:
+                                print ' '+b,
+                                bb = b.split('(')[1].strip(')').split(',')
+                                bb = [float(bb[0]),float(bb[1])]
+                                bvals.append(bb)
+                            b = np.array(bvals)
+                            print ''
+                        elif 'K@GHz' in line:
+                            print 'Freq = ',
+                            for f in labels:
+                                print 'DO THIS HERE!'
+                            
                         continue
                     indata = line.split()
                     f.append(float(indata[0]))
