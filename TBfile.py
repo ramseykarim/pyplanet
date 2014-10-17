@@ -105,12 +105,17 @@ class TBfile(object):
                     headerText.append(line)
             fp.close()
         self.parseHeader(headerText)
-        return 0
         
+        freqs = []  #frequencies
+        wavel = []  #wavelengths
+        data = []   #data
+        b = []      #b-vectors (resolution for images)
+        bmag = []   #b-mag (resolution for images)
         ### Now we have valid files and the header, now read in ftype
         if self.ftype == 'Image':
             imRow = imCol = 0
-            data = []
+            b = self.resolution
+            bmag = b
             for filename in self.files:
                 fp = open(filename,'r')
                 for line in fp:
@@ -128,7 +133,11 @@ class TBfile(object):
                     data.append(vdat)
                 fp.close()
             self.header['img_filename'] = filename
-            self.header['img_size'] = [imRow,imCol]
+            if 'img_size' not in self.header.keys():
+                self.header['img_size'] = [imRow,imCol]
+            else:
+                print self.header['img_size']
+                print 'should equal ',imRow,imCol
             self.data = np.array(data)
             self.xyextents = [-self.resolution*len(self.data)/2.0,self.resolution*len(self.data)/2.0,-self.resolution*len(self.data)/2.0,self.resolution*len(self.data)/2.0]
             self.x = []
@@ -139,49 +148,60 @@ class TBfile(object):
             self.x = np.array(self.x)
             self.y = np.array(self.y)
         elif self.ftype == 'Spectrum' or self.ftype == 'Profile':
-            bvals = []
             indata = []
-            f = []
-            wavel = []
             n = 0
             for filename in self.files:
                 fp = open(filename,'r')
                 for line in fp:
-                    if line[0] == '#':
+                    if line[0] == '#' and 'K@' in line:
                         labels = line.split()
                         xlabel = labels[1]
                         ylabel = labels[2].split('@')[1]
                         del(labels[0:3])
                         curveLabels = labels
-                        if 'K@km' in line:
+                        if self.ftype == 'Spectrum':
                             print 'b = ',
-                            for b in labels:
-                                print ' '+b,
-                                bb = b.split('(')[1].strip(')').split(',')
-                                bb = [float(bb[0]),float(bb[1])]
-                                bvals.append(bb)
-                            b = np.array(bvals)
+                            for bb in labels:
+                                print ' '+bb,
+                                bbb = bb.split('(')[1].strip(')').split(',')
+                                bbbb = [float(bbb[0]),float(bbb[1])]
+                                b.append(bbbb)
+                                bmag.append(np.sqrt(bbbb[0]**2 + bbbb[1]**2))
+                            b = np.array(b)
+                            bmag = np.array(bmag)
                             print ''
-                        elif 'K@GHz' in line:
+                        elif self.ftype == 'Profile':
                             print 'Freq = ',
                             for f in labels:
-                                print 'DO THIS HERE!'
+                                try:
+                                    ff = float(f)
+                                except ValueError:
+                                    print line
+                                    continue
+                                freqs.append(ff)
+                                print '%.3f %s' % (ff,'GHz_hardcoded'),
+                            freqs = np.array(freqs)
+
+        self.freqs = freqs
+        self.wavel = wavel
+        self.b = b
+        self.bmag = bmag
+
                             
-                        continue
-                    indata = line.split()
-                    f.append(float(indata[0]))
-                    wavel.append((speedOfLight/1E7)/float(indata[0]))
-                    del(indata[0])
-                    t = []
-                    for d in indata:
-                        t.append(float(d))
-                    data.append(t)
-                    n+=1
-                fp.close()
-            self.data = np.array(indata).transpose()
-            self.f = np.array(f)
-            self.wavel = np.array(wavel)
-            print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
+##                    indata = line.split()
+##                    f.append(float(indata[0]))
+##                    wavel.append((speedOfLight/1E7)/float(indata[0]))
+##                    del(indata[0])
+##                    t = []
+##                    for d in indata:
+##                        t.append(float(d))
+##                    data.append(t)
+##                    n+=1
+##                fp.close()
+##            self.data = np.array(indata).transpose()
+##            self.f = np.array(f)
+##            self.wavel = np.array(wavel)
+##            print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
     
     
     def parseHeader(self, headerText):

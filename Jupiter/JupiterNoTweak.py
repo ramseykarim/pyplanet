@@ -1,6 +1,6 @@
 def modify(gas,cloud,C,Cl):
 
-    comment = "Jupiter tweaking"
+    comment = "Jupiter no tweaking (except to add CO, CO13, HCN, SOLN, PH3 at zero)"
     
     nAtm = len(gas[C['P']])
     for i in range(nAtm):
