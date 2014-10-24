@@ -103,7 +103,7 @@ class planet:
         self.imSize = None
         self.outType = None
         self.bType = None
-        outputType = 'wavelength'  # THIS IS HARD-CODED FOR NOW!!!!!!!
+        outputType = 'both'  # THIS IS HARD-CODED FOR NOW!!!!!!!
 
         ###Set freqs
         if freqs == None and freqUnit == None:
@@ -127,10 +127,10 @@ class planet:
         else:
             b = self.__bRequest__(b,block)
         if self.outType is None or self.outType == 'Spectrum' or self.outType == 'Profile':
-            if len(freqs)>len(b):
-                self.outType = 'Spectrum'
-            else:
+            if len(b) > 5*len(freqs):
                 self.outType = 'Profile'
+            else:
+                self.outType = 'Spectrum'
         self.b = b
         print 'outType = '+self.outType
         if self.outType == 'Image' and len(freqs) > 1:
@@ -204,26 +204,31 @@ class planet:
                 df.write(s)
         elif self.outType == 'Spectrum':
             if outputType == 'frequency':
-                s = '# GHz  K@b  \t'
+                s = '# %s  K@b  \t' % (self.freqUnit)
             elif outputType == 'wavelength':
                 s = '# cm   K@b  \t'
+            else:
+                s = '# %s    cm    K@b  \t' % (self.freqUnit)
             for i,bv in enumerate(hit_b):
                 s+='(%5.3f,%5.3f)\t' % (bv[0],bv[1])
             s.strip('\t')
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
+                wlcm = 100.0*utils.speedOfLight / (f*utils.Units[self.freqUnit])
                 if outputType == 'frequency':
-                    s = '%.9f\t  ' % (f)
+                    s = '%.2f\t  ' % (f)
                 elif outputType == 'wavelength':
-                    s = '%.0f\t  ' % (30.0/f)
+                    s = '%.4f\t  ' % (wlcm)
+                else:
+                    s = '%.2f     %.4f \t ' % (f,wlcm)
                 for j in range(len(hit_b)):
                     s+='  %7.2f  \t' % (self.Tb[j][i])
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Profile':
             if outputType == 'frequency':
-                s = '# b  K@GHz \t'
+                s = '# b  K@%s \t'  % (self.freqUnit)
             elif outputType == 'wavelength':
                 s = '# b  K@cm  \t'
             for i,fv in enumerate(freqs):
