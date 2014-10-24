@@ -231,11 +231,16 @@ class planet:
                 s = '# b  K@%s \t'  % (self.freqUnit)
             elif outputType == 'wavelength':
                 s = '# b  K@cm  \t'
+            else:
+                s = '# b  K@GHz,cm  \t'
             for i,fv in enumerate(freqs):
+                wlcm = 100.0*utils.speedOfLight / (fv*utils.Units[self.freqUnit])
                 if outputType == 'frequency':
                     s+='  %9.4f   \t' % (fv)
                 elif outputType == 'wavelength':
-                    s+='  %.4f   \t' % (30.0/fv)
+                    s+='  %.4f   \t' % (wlcm)
+                else:
+                    s+=' %.2f,%.4f\t' % (fv,wlcm)
             s.strip('\t')
             s+='\n'
             df.write(s)
