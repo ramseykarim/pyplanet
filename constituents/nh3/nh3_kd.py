@@ -53,32 +53,39 @@ gHe_rot = []
 fo_v2 = []
 Io_v2 = []
 Eo_v2 = []
+
 def readInputFiles(path,verbose=False):
     #%% Inversion lines: 
     #% fo is frequency in GHz, Io is line intensity in cm^-1/(molecule./cm^2), 
     #% Eo is lower state energy in cm^-1, gammaNH3o and H2HeBroad are self and 
     #% foreign gas broadening parameters.
 
+    global fo, Io, Eo, gammaNH3o, H2HeBroad
+    global fo_rot, Io_rot, Eo_rot, gNH3_rot, gH2_rot, gHe_rot
+    global fo_v2, Io_v2, Eo_v2
+
     filename = os.path.join(path,'ammonia_inversion.dat')
     if verbose:
         print "Reading nh3 inversion lines:  "+filename
-    ifp = open(filename,'r')
-    header = ifp.readline()
-    if verbose:
-        print header,
-    nlin = 0
-    for line in ifp:
-        data = line.split()
-        if len(data) == 5:
-            fo.append(float(data[0]))
-            Io.append(float(data[1]))
-            Eo.append(float(data[2]))
-            gammaNH3o.append(float(data[3]))
-            H2HeBroad.append(float(data[4]))
-            nlin+=1
-        else:
-            break
-    ifp.close()
+    fo,Io,Eo,gammaNH3o,H2HeBroad = np.loadtxt(filename,skiprows=1,unpack=True)
+    nlin = len(fo)
+##    ifp = open(filename,'r')
+##    header = ifp.readline()
+##    if verbose:
+##        print header,
+##    nlin = 0
+##    for line in ifp:
+##        data = line.split()
+##        if len(data) == 5:
+##            fo.append(float(data[0]))
+##            Io.append(float(data[1]))
+##            Eo.append(float(data[2]))
+##            gammaNH3o.append(float(data[3]))
+##            H2HeBroad.append(float(data[4]))
+##            nlin+=1
+##        else:
+##            break
+##    ifp.close()
     if verbose:
         print str(nlin)+' lines'
     #%% Rotational lines: 
@@ -89,26 +96,28 @@ def readInputFiles(path,verbose=False):
     if verbose:
         print "Reading nh3 rotational lines"
     filename=os.path.join(path,'ammonia_rotational.dat')
-    ifp = open(filename,'r')
-    header = ifp.readline()
+    fo_rot,Io_rot,Eo_rot,gNH3_rot,gH2_rot,gHe_rot = np.loadtxt(filename,skiprows=1,unpack=True)
+    nlin_rot = len(fo_rot)
+##    ifp = open(filename,'r')
+##    header = ifp.readline()
+##    if verbose:
+##        print header,
+##    nlin = 0
+##    for line in ifp:
+##        data = line.split()
+##        if len(data) == 6:
+##            fo_rot.append(float(data[0]))
+##            Io_rot.append(float(data[1]))
+##            Eo_rot.append(float(data[2]))
+##            gNH3_rot.append(float(data[3]))
+##            gH2_rot.append(float(data[4]))
+##            gHe_rot.append(float(data[5]))
+##            nlin+=1
+##        else:
+##            break
+##    ifp.close()
     if verbose:
-        print header,
-    nlin = 0
-    for line in ifp:
-        data = line.split()
-        if len(data) == 6:
-            fo_rot.append(float(data[0]))
-            Io_rot.append(float(data[1]))
-            Eo_rot.append(float(data[2]))
-            gNH3_rot.append(float(data[3]))
-            gH2_rot.append(float(data[4]))
-            gHe_rot.append(float(data[5]))
-            nlin+=1
-        else:
-            break
-    ifp.close()
-    if verbose:
-        print str(nlin)+' lines'
+        print str(nlin_rot)+' lines'
     #%% v2 roto-vibrational lines: 
     #% fo_v2 is frequency in GHz, Io_v2 is line intensity in
     #% cm^-1/(molecule./cm^2), Eo_v2 is lower state energy in cm^-1,
@@ -116,24 +125,26 @@ def readInputFiles(path,verbose=False):
     if verbose:
         print "Reading nh3 roto-vibrational lines"
     filename = os.path.join(path,'ammonia_rotovibrational.dat')
-    ifp = open(filename,'r')
-    header = ifp.readline()
+    fo_v2,Io_v2,Eo_v2 = np.loadtxt(filename,skiprows=1,unpack=True)
+    nlin_v2 = len(fo_v2)
+##    ifp = open(filename,'r')
+##    header = ifp.readline()
+##    if verbose:
+##        print header,
+##    nlin=0
+##    for line in ifp:
+##        data = line.split()
+##        if len(data) == 3:
+##            fo_v2.append(float(data[0]))
+##            Io_v2.append(float(data[1]))
+##            Eo_v2.append(float(data[2]))
+##            nlin+=1
+##        else:
+##            break
+##    ifp.close()
     if verbose:
-        print header,
-    nlin=0
-    for line in ifp:
-        data = line.split()
-        if len(data) == 3:
-            fo_v2.append(float(data[0]))
-            Io_v2.append(float(data[1]))
-            Eo_v2.append(float(data[2]))
-            nlin+=1
-        else:
-            break
-    ifp.close()
-    if verbose:
-        print str(nlin)+' lines'
-    return nlin
+        print str(nlin_v2)+' lines'
+    return nlin,nlin_rot,nlin_v2
 
 def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     """function alphanh3=NH3_Consistent_Model(f,T,P,H2mr,Hemr,NH3mr)
@@ -143,6 +154,10 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     % communication, 2010), and the self and foreign gas broadening 
     % parameters for the various transitions as given by Devaraj 2011 are 
     % loaded in the following steps. """
+
+    global fo, Io, Eo, gammaNH3o, H2HeBroad
+    global fo_rot, Io_rot, Eo_rot, gNH3_rot, gH2_rot, gHe_rot
+    global fo_v2, Io_v2, Eo_v2
 
     if len(fo)==0:
         readInputFiles(path,verbose=verbose)
