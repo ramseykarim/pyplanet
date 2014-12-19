@@ -154,15 +154,15 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     #%% Declaring Constants
     GHztoinv_cm=1/29.9792458           #% for converting GHz to inverse cm
     OpticaldepthstodB=434294.5	       #% convert from cm^-1 to dB/km
-    torrperatm=760                     #% convert from atm to torr
+    torrperatm=760.0                   #% convert from atm to torr
     bartoatm=0.987                     #% convert from bat to atm
-    GHztoMHz=1000                      #% convert from GHz to MHz
+    GHztoMHz=1000.0                    #% convert from GHz to MHz
     hc=19.858252418E-24                #% planks (J.s) light (cm/s)
     k=1.38*10-23                       #% boltzmann's in J/K or N.m/K
     No=6.02297E23                      #% Avogadros Number [mole^-1]
     R=8.31432E7                        #% Rydberg's [erg/mole-K]
-    To=300                             #% Ref temp for P/P Catalogue
-    dynesperbar=1E6                    #% dyne=bar/1e6;
+    To=300.0                           #% Ref temp for P/P Catalogue
+    dynesperbar=1.0E6                  #% dyne=bar/1e6;
     coef=dynesperbar*No/R              #% See Appendix D: Using the Poyter-Pickett Catalogs
 
     #%% Computing partial pressures, temperature factor, and coefficient for ammonia
@@ -173,24 +173,42 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     #% Compute the temperature factor
     Tdiv=To/T
     #%  Coefficient for symmetric top molecule
-    eta=3/2
+    eta=3.0/2.0
 
     ####################INVERSION LINES
     #% Pressure Dependent Switch for the parameters of the inversion transitions
-    if P>15.0:
+    #ddb 141218:  put in linear transition
+    dP_up = 5.0
+    dP_down = 3.0
+    if P>15.0+dP_up:
         gnu_H2=1.6361;      gnu_He=0.4555;      gnu_NH3=0.7298;
-        GAMMA_H2=0.8;       GAMMA_He=0.5;       GAMMA_NH3=1;
+        GAMMA_H2=0.8;       GAMMA_He=0.5;       GAMMA_NH3=1.0;
         zeta_H2=1.1313;     zeta_He=0.1;        zeta_NH3=0.5152;
-        Z_H2=0.6234;        Z_He=0.5;           Z_NH3=2/3;
+        Z_H2=0.6234;        Z_He=0.5;           Z_NH3=2.0/3.0;
         d=0.2;
         Con=1.3746;
-    elif P<=15.0:
+    elif P<=15.0-dP_down:
         gnu_H2=1.7465;      gnu_He=0.9779;      gnu_NH3=0.7298;
-        GAMMA_H2=0.8202;    GAMMA_He=1;         GAMMA_NH3=1;
+        GAMMA_H2=0.8202;    GAMMA_He=1.0;       GAMMA_NH3=1.0;
         zeta_H2=1.2163;     zeta_He=0.0291;     zeta_NH3=0.5152;
-        Z_H2=0.8873;        Z_He=0.8994;        Z_NH3=2/3;
+        Z_H2=0.8873;        Z_He=0.8994;        Z_NH3=2.0/3.0;
         d=-0.0627;
         Con=0.9862;
+    else: # in linear transition region
+        gnu_H2   =1.7465 + (1.7465 - 1.6361)*(15.0-dP_down - P)/(dP_up + dP_down)
+        gnu_He   =0.9779 + (0.9779 - 0.4555)*(15.0-dP_down - P)/(dP_up + dP_down)
+        gnu_NH3  =0.7298
+        GAMMA_H2 =0.8202 + (0.8202 - 0.8)*(15.0-dP_down - P)/(dP_up + dP_down)
+        GAMMA_He =1.0    + (1.0    - 0.5)*(15.0-dP_down - P)/(dP_up + dP_down)
+        GAMMA_NH3=1.0
+        zeta_H2  =1.2163 + (1.2163 - 1.1313)*(15.0-dP_down - P)/(dP_up + dP_down)
+        zeta_He  =0.0291 + (0.0291 -    0.1)*(15.0-dP_down - P)/(dP_up + dP_down)
+        zeta_NH3 =0.5152
+        Z_H2     =0.8873 + (0.8873 - 0.6234)*(15.0-dP_down - P)/(dP_up + dP_down)
+        Z_He     =0.8994 + (0.8994 -    0.5)*(15.0-dP_down - P)/(dP_up + dP_down)
+        Z_NH3    =2.0/3.0
+        d        =-0.0627+ (-0.0627 -   0.2)*(15.0-dP_down - P)/(dP_up + dP_down)
+        Con      =0.9862 + (0.9862 - 1.3746)*(15.0-dP_down - P)/(dP_up + dP_down)
 
     gammaNH3omat = np.matrix(gammaNH3o)
     #% Individual broadening parameters
@@ -232,7 +250,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     ST = []
     alpha_noshape = []
     for i,eo in enumerate(Eo):
-        expo.append(-(1/T-1/To)*eo*hc/k)
+        expo.append(-(1.0/T-1.0/To)*eo*hc/k)
         ST.append(Io[i]*math.exp(expo[i]))	                     #% S(T) =S(To)converted for temperature
         alpha_noshape.append(Con*coef*(P_nh3/To)*((To/T)**(eta+2.0))*ST[i])  #%0.9387
     #%Ben Reuven lineshape calculated by the brlineshape function gives the answer in GHz
@@ -259,7 +277,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     ####################ROTATIONAL LINES
     ST_rot = []
     for i,eo in enumerate(Eo_rot):
-        ST_rot.append(Io_rot[i]*(math.exp((1/To-1/T)*eo*hc/k)))
+        ST_rot.append(Io_rot[i]*(math.exp((1.0/To-1.0/T)*eo*hc/k)))
     STmat_rot=np.transpose(np.matrix(ST_rot))
     #% Factor GAMMA:
     eta_H2=0.8730
@@ -292,7 +310,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     Cc=4.0*np.multiply(np.square(f_matrix),np.square(dnu_matrix))
     F_rot=np.divide(Aa,Bb+Cc);
     Fbr_rot=(1/GHztoinv_cm)*F_rot
-    alpha_rot=np.multiply(Con*coef*(P_nh3/To)*((To/T)**(eta+2))*STmat_rot*nones,Fbr_rot)
+    alpha_rot=np.multiply(Con*coef*(P_nh3/To)*((To/T)**(eta+2.0))*STmat_rot*nones,Fbr_rot)
     
     #%% Computing the opacity due to v2 roto-vibrational lines
     #% Computing the absorption contributed by the v2 rotovibrational lines
@@ -307,7 +325,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     #% Factor GAMMA
     eta_H2=0.73
     eta_He=0.5716
-    eta_NH3=1
+    eta_NH3=1.0
     #% Factor Con
     Con=1.1206
     #% Individual broadening parameters
@@ -331,7 +349,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     Cc=4.0*np.multiply(np.square(f_matrix),np.square(dnu_matrix))
     F_v2=np.divide(Aa,Bb+Cc);
     Fbr_v2=(1/GHztoinv_cm)*F_v2
-    alpha_v2=np.multiply(Con*coef*(P_nh3/To)*((To/T)**(eta+2))*STmat_v2*nones,Fbr_v2)
+    alpha_v2=np.multiply(Con*coef*(P_nh3/To)*((To/T)**(eta+2.0))*STmat_v2*nones,Fbr_v2)
     
     #%% Computing the total opacity
     alpha_opdep=np.sum(np.transpose(alpha_inversion),1)+np.sum(np.transpose(alpha_rot),1)+np.sum(np.transpose(alpha_v2),1)

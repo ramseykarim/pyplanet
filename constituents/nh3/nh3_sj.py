@@ -108,7 +108,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
         if f<=fLower:
             use = Spilker
         elif f>=fHigher:
-            use = Spilker
+            use = Joiner
         else:
             use = Interp
         if use == Interp:

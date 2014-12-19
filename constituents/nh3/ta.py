@@ -101,7 +101,7 @@ if True:
     for i in range(len(jupiterTestP)):
         T = jupiterTestT[i]
         P = jupiterTestP[i]
-        #X_partial = [X_h2[i],X_he[i],X_nh3[i]]
+        X_partial = [X_h2[i],X_he[i],X_nh3[i]]
         a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
         a_bg.append(nh3_bg.alpha(f,T,P,X_partial,P_dict,otherPar))
         fp.write('%f\t%f\t%f\t%f\t%f\t%s\t%s\n' % (P,T,X_partial[0],X_partial[1],X_partial[2],str(a_kd[i]),str(a_bg[i])))
