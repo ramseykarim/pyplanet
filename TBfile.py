@@ -148,8 +148,9 @@ class TBfile(object):
             self.x = np.array(self.x)
             self.y = np.array(self.y)
         elif self.ftype == 'Spectrum' or self.ftype == 'Profile':
-            indata = []
+            #indata = []
             n = 0
+            validData = True
             for filename in self.files:
                 fp = open(filename,'r')
                 for line in fp:
@@ -181,27 +182,34 @@ class TBfile(object):
                                 freqs.append(ff)
                                 print '%.3f %s' % (ff,'GHz_hardcoded'),
                             freqs = np.array(freqs)
+                    elif line[0] == '#':
+                        continue
+                    elif len(line)>2:
+                        dat = line.split()
+                        for i in range(len(dat)):
+                            #print dat[i]
+                            try:
+                                dat[i] = float(dat[i])
+                                #print 'Good'
+                            except ValueError:
+                                dat[i] = dat[i]
+                                validData = False
+                                #print 'Bad'                                
+                        if self.ftype == 'Spectrum':
+                            freqs.append(dat[0])
+                            wavel.append((utils.speedOfLight/1E7)/dat[0])
+                        elif self.ftype == 'Profile':
+                            print "NEED TO READ B'S"
+                        del(dat[0])
+                        data.append(dat)
+                fp.close()
+        if validData:
+            self.data = np.array(data)
+        self.freqs = np.array(freqs)
+        self.wavel = np.array(wavel)
+        self.b = np.array(b)
+        self.bmag = np.array(bmag)
 
-        self.freqs = freqs
-        self.wavel = wavel
-        self.b = b
-        self.bmag = bmag
-
-                            
-##                    indata = line.split()
-##                    f.append(float(indata[0]))
-##                    wavel.append((speedOfLight/1E7)/float(indata[0]))
-##                    del(indata[0])
-##                    t = []
-##                    for d in indata:
-##                        t.append(float(d))
-##                    data.append(t)
-##                    n+=1
-##                fp.close()
-##            self.data = np.array(indata).transpose()
-##            self.f = np.array(f)
-##            self.wavel = np.array(wavel)
-##            print 'Freq:  %.3f - %.3f %s  (%d points)' % (f[0],f[-1],xlabel,n)
     
     
     def parseHeader(self, headerText):
@@ -248,7 +256,7 @@ def plotTB(fn=None,xaxis='Frequency',xlog=False, justFreq=False, directory='Outp
            directory = subdirectory for data (not used if filename given) ['Output']
            distance = distance for angular size plot in km [4377233696 km for Neptune]"""
 
-    filename,Tb,f,wavel,b,xlabel,ylabels = readTB(fn=fn,directory=directory)
+    filename,Tb,f,wavel,b,xlabel,ylabels = read(fn=fn,directory=directory)
     title = filename.split('/')
 
     ## Frequency plot

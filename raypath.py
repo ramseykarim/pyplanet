@@ -126,8 +126,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     if (b[0]**2 + b[1]**2) > 1.0:
         return path
 
-    if atm.config.limb == 'sec':
-        mu = math.sqrt(1.0 - b[0]**2 - b[1]**2)
+    mu = math.sqrt(1.0 - b[0]**2 - b[1]**2)
 
     f = 1.0 - atm.config.Rpol/atm.config.Req
     tip, rotate = __computeAspect__(orientation,f)
@@ -256,6 +255,10 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
         # get refractive index ratio and check for exit
         try:
             nratio = nr[layer]/nr[layer+raypathdir[direction]]
+            #-# DEBUG START #-#
+            print '   reset nratio=1  ',
+            nratio = 1.0
+            #-# DEBUG END #-#
             try:
                 t_tmp = math.asin(nratio*math.sin(t_inc[-1]))
             except ValueError:
@@ -267,6 +270,16 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
 
     # Get rid of the first entry, which was just used to make indexing in loop consistent
     del ds[0], layer4ds[0], r4ds[0], P4ds[0]
+    #-# DEBUG START #-#
+    print 'RAYPATH:  ',ds[0],r4ds[0]-r4ds[1], ds[0]/(r4ds[0]-r4ds[1]),b,1.0/mu
+    dsmu = []
+    for i in range(1500):
+        dsmu.append(ds[i]/(r4ds[i]-r4ds[i+1]))
+    plt.figure('test_ds')
+    plt.plot(dsmu)
+    plt.plot([0,1499],[1.0/mu,1.0/mu])
+    #-# DEBUG END #-#
+    
     path.update(ds=ds,layer4ds=layer4ds,r4ds=r4ds,P4ds=P4ds,doppler=doppler,tip=tip,rotate=rotate,rNorm=rNorm)
     if plot:
         plotStuff(r=np.array(r),ray=path)

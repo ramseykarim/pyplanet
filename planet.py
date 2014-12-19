@@ -96,14 +96,14 @@ class planet:
             self.atm.run()
             self.log.flush()
 
-    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None):
+    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None, outputType='frequency'):
         """Runs the model to produce the brightness temperature, weighting functions etc etc
-           b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)"""
+           b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)
+           outputType sets whether frequency, wavelength, or both are written"""
 
         self.imSize = None
         self.outType = None
         self.bType = None
-        outputType = 'both'  # THIS IS HARD-CODED FOR NOW!!!!!!!
 
         ###Set freqs
         if freqs == None and freqUnit == None:

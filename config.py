@@ -122,9 +122,9 @@ class planetConfig:
             # Second pass for some
             if tok == 'gasfile':
                 try:
-                    self.cloudFileHdr = int(data[1])
+                    self.gasFileHdr = int(data[1])
                 except:
-                    self.cloudFileHdr = 0
+                    self.gasFileHdr = 0
             elif tok == 'cloudfile':
                 try:
                     self.cloudFileHdr = int(data[1])
