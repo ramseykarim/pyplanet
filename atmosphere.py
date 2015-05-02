@@ -36,6 +36,7 @@ class Atmosphere:
         self.verbose=verbose
         self.plot=plot
         self.logFile = utils.setupLogFile(log)
+        self.batch = False
         
         print '\n---Atmosphere of %s---' % (planet)
         if type(config) == str:
@@ -81,6 +82,7 @@ class Atmosphere:
             cloudType = self.config.cloudType
         if otherType==None:
             otherType = self.config.otherType
+        self.nAtm = 0
 
         ### Generate gas profile (gasType is 'read' or 'compute')
         if not self.gasGen.has_key(gasType):
@@ -89,36 +91,38 @@ class Atmosphere:
         else:
             self.gasGen[gasType](verbose=verbose)
 
-        ### Generate cloud profile (cloudType is 'read' or 'compute')
-        if not self.cloudGen.has_key(cloudType):
-            print 'Error:  No such cloudType: '+cloudType
-            return 0
-        else:
-            self.cloudGen[cloudType](verbose=verbose)
+        if not self.batch:
+            ### Generate cloud profile (cloudType is 'read' or 'compute')
+            if not self.cloudGen.has_key(cloudType):
+                print 'Error:  No such cloudType: '+cloudType
+                return 0
+            else:
+                self.cloudGen[cloudType](verbose=verbose)
 
-        if tweak:  # This loads and calls the module 'tweakFile'
-            self.tweakAtm()
+            if tweak:  # This loads and calls the module 'tweakFile'
+                self.tweakAtm()
 
-        ### Compute other parameters that are needed
-        if not self.propGen.has_key(self.config.otherType):
-            print 'Error:  no such otherTpe: '+otherType
-            return 0
-        else:
-            self.propGen[otherType](verbose=verbose)
+            ### Compute other parameters that are needed
+            if not self.propGen.has_key(self.config.otherType):
+                print 'Error:  no such otherTpe: '+otherType
+                return 0
+            else:
+                self.propGen[otherType](verbose=verbose)
 
-        ### Put onto common grid
-        regridded = regrid.regrid(self,regridType=regridType,Pmin=Pmin,Pmax=Pmax)
-        self.nAtm = len(self.gas[0])
+            ### Put onto common grid
+            regridded = regrid.regrid(self,regridType=regridType,Pmin=Pmin,Pmax=Pmax)
+            self.nAtm = len(self.gas[0])
 
-        angularDiameter = 2.0*math.atan(self.layerProperty[self.config.LP['R']][0]/self.config.distance)
-        print 'angular radius = %f arcsec' % ((180.0/np.pi)*3600.0*angularDiameter/2.0)
+            angularDiameter = 2.0*math.atan(self.layerProperty[self.config.LP['R']][0]/self.config.distance)
+            print 'angular radius = %f arcsec' % ((180.0/np.pi)*3600.0*angularDiameter/2.0)
         
-        ### Plot data
-        if plot:
-            self.plotTP()
-            self.plotGas()
-            self.plotCloud()
-            self.plotProp()
+            ### Plot data
+            if plot:
+                self.plotTP()
+                self.plotGas()
+                self.plotCloud()
+                self.plotProp()
+
         return self.nAtm
 
     def getval(self,val=None,vtype='gas'):
@@ -238,6 +242,9 @@ class Atmosphere:
 
         if gasFile is None:
             gasFile=self.config.gasFile
+        if gasFile == 'batch':
+            self.batch = True
+            return 0
         gasFile = os.path.join(self.config.path,gasFile)
         if numHeaderLines is None:
             numHeaderLines = self.config.gasFileHdr
@@ -321,8 +328,12 @@ class Atmosphere:
 
     def readCloud(self,cloudFile=None,verbose=False,numHeaderLines=None):
         """Reads in cloud data if we have it..."""
+
         if cloudFile == None:
             cloudFile=self.config.cloudFile
+        if cloudFile == 'batch':
+            self.batch = True
+            return 0
         cloudFile = os.path.join(self.config.path,cloudFile)
         if numHeaderLines is None:
             numHeaderLines = self.config.cloudFileHdr
@@ -392,6 +403,9 @@ class Atmosphere:
 
     def tweakAtm(self):
         """Tweaks the atmosphere data..."""
+        if self.batch:
+            print 'Defer tweaking'
+            return 0
         nAtm = len(self.gas[self.config.C['P']])
         if nAtm - self.nGas != 0:
             print 'Error in number of layers - check it out ('+str(nAtm)+'/'+str(self.nGas)+')'
@@ -427,6 +441,10 @@ class Atmosphere:
 
     def computeProp(self,verbose=False):
         """This module computes derived atmospheric properties (makes self.layerProperty)"""
+        if self.batch:
+            print 'Defer computing properties'
+            return 0
+        nAtm = len(self.gas[self.config.C['P']])
         self.layerProperty = []
         for op in self.config.LP:
             self.layerProperty.append([])

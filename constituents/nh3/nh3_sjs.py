@@ -43,6 +43,7 @@ def readInputFiles(path,verbose=False):
     return nlin
 
 def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
+    global coef, T0, hck, GHz, fLower, fHigher, EPS, f0, I0, E, G0
     Joiner = 0
     Spilker = 1
     Interp = 2
