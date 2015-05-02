@@ -38,7 +38,7 @@ def alpha(freq,T,P,cloud,cloud_dict,otherPar,units='dBperkm',path='./',verbose=F
             e = n**2
             alpha+= acloud(k,fraction,e)
         if otherPar.has_key('ch4') and otherPar['ch4'] > 0.0:
-            density = cloud[cloud_dict['CH4']]/1.0
+            fraction = cloud[cloud_dict['CH4']]/1.0
             n = 1.3 - 0.00001j
             e = n**2
             alpha+= acloud(k,fraction,e)

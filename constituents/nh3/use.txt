@@ -1,4 +1,4 @@
-nh3_kd
+nh3_bg
 ---options---
 nh3_kd
 nh3_bg

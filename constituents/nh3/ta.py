@@ -16,39 +16,40 @@ for i in range(n):
     f.append(fmin + i*fstep)
 otherPar = []
 
-##print 'Fig. 5.2'
-##P = 1.009
-##T = 216.4
-##X_nh3 = 0.0095
-##X_he = 0.1347
-##X_h2 = 1.0 - (X_nh3+X_he)
-##X_partial=[X_h2,X_he,X_nh3]
-##P_dict = {'H2':0,'HE':1,'NH3':2}
-##a = nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar)
-##plt.semilogy(f,a)
-##plt.axis([1,25,.01,1000])
-##
-##
-##plt.figure('vsP')
-##f = [0.5]
-##T = 200.0
-##Pvals = np.arange(1.0,100.0,1.0)
-##alpha = []
-##for P in Pvals:
-##    alpha.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
-##plt.plot(Pvals,alpha)
-##
-##plt.figure('vsT')
-##f = [0.5]
-##P = 200.0
-##Tvals = np.arange(100.0,1000.0,10.0)
-##alpha = []
-##for T in Tvals:
-##    alpha.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
-##plt.plot(Tvals,alpha)
+if False:
+    print 'Fig. 5.2'
+    P = 1.009
+    T = 216.4
+    X_nh3 = 0.0095
+    X_he = 0.1347
+    X_h2 = 1.0 - (X_nh3+X_he)
+    X_partial=[X_h2,X_he,X_nh3]
+    P_dict = {'H2':0,'HE':1,'NH3':2}
+    a = nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar)
+    plt.semilogy(f,a)
+    plt.axis([1,25,.01,1000])
 
 
-f = [4.0, 8.0,20.0]
+    plt.figure('vsP')
+    f = [0.5]
+    T = 200.0
+    Pvals = np.arange(1.0,100.0,1.0)
+    alpha = []
+    for P in Pvals:
+        alpha.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
+    plt.plot(Pvals,alpha)
+
+    plt.figure('vsT')
+    f = [0.5]
+    P = 200.0
+    Tvals = np.arange(100.0,1000.0,10.0)
+    alpha = []
+    for T in Tvals:
+        alpha.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
+    plt.plot(Tvals,alpha)
+
+
+f = [4.0]#, 8.0,20.0]
 fclr = ['b','r','g']
 
 
@@ -67,7 +68,7 @@ for i in range(len(jupiterTestP)):
     P = jupiterTestP[i]
     a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
     a_bg.append(nh3_bg.alpha(f,T,P,X_partial,P_dict,otherPar))
-    #print '%5.0f\t%4.0f\t%.3f\t%.3f' % (P,T,a_kd[i],a_bg[i])
+    print '%5.0f\t%4.0f\t%.3f\t%.3f' % (T,P,a_kd[i][0],a_bg[i][0])
 a_kd = np.array(a_kd)
 a_bg = np.array(a_bg)
 plt.figure('samples')
@@ -79,6 +80,7 @@ for i in range(len(f)):
     plt.plot(jupiterTestP,a_bg[:,i],'ro')
     plt.plot(jupiterTestP,a_bg[:,i],'r',label=s)
 plt.xscale('log')
+plt.yscale('log')
 plt.legend()
 plt.xlabel('Pressure [bars]')
 plt.ylabel(r'$\alpha$ [dB/km]')
@@ -88,8 +90,8 @@ print X_partial
 
 if True:
     fp = open('juptest.dat','w')
-    f = [4.0, 8.0,20.0]
-    fclr = ['b','r','g']
+    f = [1.4,4.0, 8.0,20.0]
+    fclr = ['k','b','r','g']
     jupdat = np.loadtxt('jupiter.paulSolar')
     jupiterTestP = jupdat[:,2]
     jupiterTestT = jupdat[:,1]
