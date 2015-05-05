@@ -1,6 +1,6 @@
 import nh3_kd
 import nh3_bg
-import nh3_js
+import nh3_sjs
 import matplotlib.pyplot as plt
 import math
 import numpy as np
@@ -65,17 +65,17 @@ P_dict = {'H2':0,'HE':1,'NH3':2}
 
 a_kd = []
 a_bg = []
-a_js = []
+a_sjs = []
 for i in range(len(jupiterTestP)):
     T = jupiterTestT[i]
     P = jupiterTestP[i]
     a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
     a_bg.append(nh3_bg.alpha(f,T,P,X_partial,P_dict,otherPar))
-    a_js.append(nh3_js.alpha(f,T,P,X_partial,P_dict,otherPar))
+    a_sjs.append(nh3_sjs.alpha(f,T,P,X_partial,P_dict,otherPar))
     print '%5.0f\t%4.0f\t%.3f\t%.3f' % (T,P,a_kd[i][0],a_bg[i][0])
 a_kd = np.array(a_kd)
 a_bg = np.array(a_bg)
-a_js = np.array(a_js)
+a_sjs = np.array(a_sjs)
 plt.figure('samples')
 for i in range(len(f)):
     s = '%.0f GHz' % (f[i])
@@ -84,7 +84,7 @@ for i in range(len(f)):
     plt.plot(jupiterTestP,a_kd[:,i],'b',label=s)
     plt.plot(jupiterTestP,a_bg[:,i],'ro')
     plt.plot(jupiterTestP,a_bg[:,i],'r',label=s)
-    plt.plot(jupiterTestP,a_js[:,i],'k')
+    plt.plot(jupiterTestP,a_sjs[:,i],'k')
 plt.xscale('log')
 plt.yscale('log')
 plt.legend()
@@ -106,23 +106,23 @@ if True:
     X_h2 = jupdat[:,3]
     a_kd = []
     a_bg = []
-    a_js = []
+    a_sjs = []
     for i in range(len(jupiterTestP)):
         T = jupiterTestT[i]
         P = jupiterTestP[i]
         X_partial = [X_h2[i],X_he[i],X_nh3[i]]
         a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
         a_bg.append(nh3_bg.alpha(f,T,P,X_partial,P_dict,otherPar))
-        a_js.append(nh3_js.alpha(f,T,P,X_partial,P_dict,otherPar))
+        a_sjs.append(nh3_sjs.alpha(f,T,P,X_partial,P_dict,otherPar))
         fp.write('%f\t%f\t%f\t%f\t%f\t%s\t%s\n' % (P,T,X_partial[0],X_partial[1],X_partial[2],str(a_kd[i]),str(a_bg[i])))
     a_kd = np.array(a_kd)
     a_bg = np.array(a_bg)
-    a_js = np.array(a_js)
+    a_sjs = np.array(a_sjs)
     plt.figure('ssampless')
     for i in range(len(f)):
         plt.plot(jupiterTestP,a_kd[:,i],fclr[i])
         plt.plot(jupiterTestP,a_bg[:,i],fclr[i]+'--')
-        plt.plot(jupiterTestP,a_js[:,i],fclr[i]+':')
+        plt.plot(jupiterTestP,a_sjs[:,i],fclr[i]+':')
     plt.xscale('log')
     plt.xlabel('Pressure [bars]')
     plt.ylabel(r'$\alpha$ [dB/km]')

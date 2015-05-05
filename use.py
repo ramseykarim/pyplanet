@@ -12,6 +12,7 @@ for c in constituents:
         o.add_argument(acon,help='toggle '+c,action='store_true')
 args = o.parse_args()
 argdict = vars(args)
+print argdict
 
 for c in constituents:
     cpth = os.path.join('constituents',c)

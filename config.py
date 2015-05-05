@@ -133,13 +133,15 @@ class planetConfig:
             elif tok == 'constituents':
                 self.C = {}
                 for i,w in enumerate(data):
-                    w = w.upper()
-                    self.C[w] = i
+                    if w!='-':
+                        w = w.upper()
+                        self.C[w] = i
             elif tok == 'clouds':
                 self.Cl = {}
                 for i,w in enumerate(data):
-                    w = w.upper()
-                    self.Cl[w] = i
+                    if w!='-':
+                        w = w.upper()
+                        self.Cl[w] = i
             elif tok == 'regridtype':
                 self.regridType = line
             elif tok == 'pmin':

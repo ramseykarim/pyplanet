@@ -30,6 +30,14 @@ def getRFband(freq,unit='GHz'):
             return bnd
     return None
 
+def invertDictionary(dic):
+    e = {}
+    for d in dic.keys():
+        e[dic[d]] = d
+    sk = e.keys()
+    sk.sort()
+    return e,sk
+
 def setupLogFile(log,path='Logs/'):
     if type(log) == file:
         logfp = log

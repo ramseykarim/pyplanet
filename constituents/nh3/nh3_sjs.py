@@ -7,8 +7,8 @@ coef = 7.244E+21     # coefficient from GEISA_PP.TEX eq. 14
 T0 = 296.0           # reference temperature in K
 hck = 1.438396       # hc/k  [K cm]
 GHz = 29.9792458     # conversion from cm^-1 to GHz
-fLower = 40.0        # beginning of transition between S and J
-fHigher = 50.0       # end of transition    "
+fLower = 26.0        # beginning of transition between S and J (changed from 40 15/5/4)
+fHigher = 34.0       # end of transition    "  (changed from 50 15/5/4)
 EPS = 1E-12          # a small number
 
 #Set data arrays
@@ -55,6 +55,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     P_h2 = P*X[P_dict['H2']]
     P_he = P*X[P_dict['HE']]
     P_nh3= P*X[P_dict['NH3']]
+    Pscale = 1.0 + P/2.0E4 #ad hoc to make this match Berge-Gulkis for deep Jupiter atmosphere
 
     # Set Joiner
     GH2 = [1.690]
@@ -134,7 +135,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
             shape = GHz*2.0*pow(f/f0[i],2.0)*num/(math.pi*den)
             alpha += shape*ITG
 
-        a = coef*(P_nh3/T0)*pow((T0/T),n_int+2)*alpha
+        a = coef*(P_nh3/T0)*pow((T0/T),n_int+2)*alpha*Pscale
         if units=='dBperkm':
             a*=434294.5
         alpha_nh3.append(a)

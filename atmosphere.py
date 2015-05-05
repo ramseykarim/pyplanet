@@ -237,11 +237,13 @@ class Atmosphere:
         plt.xlabel('Property')
         plt.legend()
 
-    def readGas(self,gasFile=None,verbose=False,numHeaderLines=None):
+    def readGas(self,gasFile=None,numHeaderLines=None,Cdict=None,verbose=False):
         """Reads gas profile file as self.gas"""
 
         if gasFile is None:
             gasFile=self.config.gasFile
+        if Cdict is None:
+            Cdict = self.config.C
         if gasFile == 'batch':
             self.batch = True
             return 0
@@ -251,11 +253,11 @@ class Atmosphere:
 
         print 'Reading '+gasFile+'  (Header:  '+str(numHeaderLines)+')'
         self.gas = []
-        print '\tUsing atmsopheric constituent:  ',
-        for k in self.config.C:
+        print '\tUsing atmsopheric component:  ',
+        for k in Cdict:
             print k+'  ',
             self.gas.append([])
-
+        self.nConstituent = len(Cdict)
         try:
             fp = open(gasFile,"r")
         except IOError:
@@ -279,17 +281,27 @@ class Atmosphere:
                 else:
                     continue
             if i==0:
-                self.nConstituent = len(data)
-                print '\tReading '+str(self.nConstituent)+' components'
-            for n in range(len(self.config.C)): ## Initialize all of the constituents to 0.0
+                print '\tCompiling '+str(self.nConstituent)+' components (data-file: '+str(len(data))+')'
+            for n in range(self.nConstituent): ## Initialize all of the constituents to 0.0
                 self.gas[n].append(0.0)
-            for n,v in enumerate(data): ## ...now read in data
-                self.gas[n][i] = float(v)
+            columns = Cdict.values()
+            columns.sort()
+            for n,v in enumerate(columns): ## ...now read in data
+                if v < len(data):
+                    self.gas[n][i] = float(data[v])
+                else:
+                    self.gas[n][i] = 0.0
             if (self.nConstituent-n)!=1:
                 print 'line '+str(i+1)+' has incorrect number of components'
                 print '['+line+']'
             i+=1
         self.nGas = i
+        ###Redo the constituent dictionary for the self.gas index positions
+        nid,sk = utils.invertDictionary(Cdict)
+        for i,k in enumerate(sk):
+            Cdict[nid[k]] = i
+        self.config.C = Cdict
+        
         print '\tRead '+str(self.nGas)+' lines'
         fp.close()
         self.gas = np.array(self.gas)
@@ -326,11 +338,13 @@ class Atmosphere:
         fp.close()
                 
 
-    def readCloud(self,cloudFile=None,verbose=False,numHeaderLines=None):
+    def readCloud(self,cloudFile=None,numHeaderLines=None,Cldict=None,verbose=False):
         """Reads in cloud data if we have it..."""
 
         if cloudFile == None:
             cloudFile=self.config.cloudFile
+        if Cldict == None:
+            Cldict = self.config.Cl
         if cloudFile == 'batch':
             self.batch = True
             return 0
@@ -341,10 +355,10 @@ class Atmosphere:
         print 'Reading '+cloudFile+'  (Header:  '+str(numHeaderLines)+')'
         self.cloud = []
         print '\tUsing cloud component:  ',
-        for k in self.config.Cl:
+        for k in Cldict:
             print k+'  ',
             self.cloud.append([])
-
+        self.nParticulate = len(Cldict)
         try:
             fp = open(cloudFile,"r")
         except IOError:
@@ -368,17 +382,27 @@ class Atmosphere:
                     continue
             data = line.split()
             if i==0:
-                self.nParticulate = len(data)
-                print '\tReading '+str(self.nParticulate)+' cloud particles'
-            for n in range(len(self.config.Cl)): ## Initialize all of the particulates to 0.0
+                print '\tReading '+str(self.nParticulate)+' cloud particles (data-file: '+str(len(data))+')'
+            for n in range(self.nParticulate): ## Initialize all of the particulates to 0.0
                 self.cloud[n].append(0.0)
-            for n,v in enumerate(data): ## ...now read in data
-                self.cloud[n][i] = float(v)
+            columns = Cldict.values()
+            columns.sort()
+            for n,v in enumerate(columns): ## ...now read in data
+                if v < len(data):
+                    self.cloud[n][i] = float(data[v])
+                else:
+                    self.cloud[n][i] = 0.0
             if (self.nParticulate-n)!=1:
                 print 'line '+str(i+1)+' has incorrect number of particulates'
                 print '['+line+']'
             i+=1
         self.nCloud = i
+        ###Redo the particulate dictionary for the self.cloud index positions
+        nid,sk = utils.invertDictionary(Cldict)
+        for i,k in enumerate(sk):
+            Cldict[nid[k]] = i
+        self.config.Cl = Cldict
+        
         print '\tRead '+str(self.nCloud)+' lines'
         fp.close()
         self.cloud = np.array(self.cloud)
