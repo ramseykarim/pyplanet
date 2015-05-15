@@ -99,16 +99,21 @@ class planet:
     def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None, outputType='frequency'):
         """Runs the model to produce the brightness temperature, weighting functions etc etc
            b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)
-           outputType sets whether frequency, wavelength, or both are written"""
+           outputType sets whether frequency, wavelength, or both are written
+           if outputType is 'batch', it forces the outType to be 'Spectrum' and outputType to be 'frequency'"""
 
         self.imSize = None
         self.outType = None
         self.bType = None
 
         ###Set freqs
+        reuse = False
         if freqs == None and freqUnit == None:
             freqs = self.freqs
             freqUnit = self.freqUnit
+        elif freqs == 'reuse':
+            freqs = self.freqs
+            reuse = True
         else:
             if freqUnit == None:
                 freqUnit = 'GHz'
@@ -131,6 +136,9 @@ class planet:
                 self.outType = 'Profile'
             else:
                 self.outType = 'Spectrum'
+        if outputType == 'batch':
+            self.outType = 'Spectrum'
+            outputType = 'frequency'
         self.b = b
         print 'outType = '+self.outType
         if self.outType == 'Image' and len(freqs) > 1:
@@ -146,15 +154,17 @@ class planet:
             plot = self.plot
         runStart = datetime.datetime.now()
 
-        ### Read in absorption modules:  to change absorption, edit files under /constituents'
-        self.alpha = alpha.alpha(config=self.config,log=self.log,verbose=verbose,plot=plot)
-        #self.alpha.test(f=0,verbose=True,plot=True)
-        self.log.flush()
+        if not reuse:
+            ### Read in absorption modules:  to change absorption, edit files under /constituents'
+            self.alpha = alpha.alpha(config=self.config,log=self.log,verbose=verbose,plot=plot)
+            #self.alpha.test(f=0,verbose=True,plot=True)
+            self.log.flush()
 
-        ### Next compute radiometric properties - initialize bright
-        self.bright = bright.brightness(log=self.log,verbose=verbose,plot=plot)
-        if not self.config.Doppler:
-            self.bright.layerAbsorption(freqs,self.atm,self.alpha)
+            ### Next compute radiometric properties - initialize bright
+            self.bright = bright.brightness(log=self.log,verbose=verbose,plot=plot)
+            if not self.config.Doppler:
+                self.bright.layerAbsorption(freqs,self.atm,self.alpha)
+            
         self.Tb=[]
         hit_b=[]
         btmp = ''
@@ -203,6 +213,7 @@ class planet:
                 s+='\n'
                 df.write(s)
         elif self.outType == 'Spectrum':
+            fp_lineoutput = open('specoutputline.dat','w')
             if outputType == 'frequency':
                 s = '# %s  K@b  \t' % (self.freqUnit)
             elif outputType == 'wavelength':
@@ -211,7 +222,7 @@ class planet:
                 s = '# %s    cm    K@b  \t' % (self.freqUnit)
             for i,bv in enumerate(hit_b):
                 s+='(%5.3f,%5.3f)\t' % (bv[0],bv[1])
-            s.strip('\t')
+            s=s.strip('\t')
             s+='\n'
             df.write(s)
             for i,f in enumerate(freqs):
@@ -224,8 +235,11 @@ class planet:
                     s = '%.2f     %.4f \t ' % (f,wlcm)
                 for j in range(len(hit_b)):
                     s+='  %7.2f  \t' % (self.Tb[j][i])
+                s=s.strip()
                 s+='\n'
+                fp_lineoutput.write(s)
                 df.write(s)
+            fp_lineoutput.close()
         elif self.outType == 'Profile':
             if outputType == 'frequency':
                 s = '# b  K@%s \t'  % (self.freqUnit)
@@ -399,6 +413,7 @@ class planet:
         if type(freqs) != list:
             freqs = [freqs]
         elif len(freqs)==3:
+            print 'Computing frequency range (len(freqs)==3)'
             fstart=freqs[0]
             fstop=freqs[1]
             fstep=freqs[2]

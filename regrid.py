@@ -66,7 +66,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     if Pgrid is None:
         print 'not implemented yet - no regrid'
         return 0
-
+    
     ### Copy over for new array size
     nAtm = len(Pgrid)
     nGas = atm.gas.shape[0]
@@ -90,7 +90,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
         gpar = (atm.layerProperty[atm.config.LP['g']][-1],atm.layerProperty[atm.config.LP['R']][-1],atm.layerProperty[atm.config.LP['P']][-1])
         gas = extrapolate(gas,fillval,atm,gpar)
     atm.gas = gas
-    
+
     ### Interpolate cloud onto the grid - fillval=0.0 extrapolates since we assume no clouds outside range and
     ###      don't care about other stuff then either
     fillval = 0.0
@@ -170,7 +170,7 @@ def extrapolate(gas,fillval,atm,gpar):
             gas[atm.config.C['Z']][i] = gas[atm.config.C['Z']][i-1]-dz
     return gas            
 
-    #extrapolate out along last slope
+    #extrapolate out along last slope (move return gas above if you think you want this)
     for yvar in atm.config.C:
         if yvar == 'P':
             continue

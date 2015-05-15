@@ -256,7 +256,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
         try:
             nratio = nr[layer]/nr[layer+raypathdir[direction]]
             #-# DEBUG START #-#
-            print '   reset nratio=1  ',
+            #-#print '   reset nratio=1  ',nratio,
             nratio = 1.0
             #-# DEBUG END #-#
             try:
@@ -271,7 +271,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     # Get rid of the first entry, which was just used to make indexing in loop consistent
     del ds[0], layer4ds[0], r4ds[0], P4ds[0]
     #-# DEBUG START #-#
-    print 'RAYPATH:  ',ds[0],r4ds[0]-r4ds[1], ds[0]/(r4ds[0]-r4ds[1]),b,1.0/mu
+    #-#print 'RAYPATH:  ',ds[0],r4ds[0]-r4ds[1], ds[0]/(r4ds[0]-r4ds[1]),b,1.0/mu
     dsmu = []
     for i in range(1500):
         dsmu.append(ds[i]/(r4ds[i]-r4ds[i+1]))

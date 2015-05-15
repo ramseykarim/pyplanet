@@ -247,6 +247,8 @@ class Atmosphere:
         if gasFile == 'batch':
             self.batch = True
             return 0
+        else:
+            self.batch = False
         gasFile = os.path.join(self.config.path,gasFile)
         if numHeaderLines is None:
             numHeaderLines = self.config.gasFileHdr
@@ -348,6 +350,8 @@ class Atmosphere:
         if cloudFile == 'batch':
             self.batch = True
             return 0
+        else:
+            self.batch = False
         cloudFile = os.path.join(self.config.path,cloudFile)
         if numHeaderLines is None:
             numHeaderLines = self.config.cloudFileHdr
