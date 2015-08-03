@@ -157,7 +157,7 @@ class brightness():
                     wplot = self.W[i]
                 label=r'$W$: %.1f GHz' % (f)
                 label=r'%.1f cm' % (30.0/f)
-                label=r'%.0f$^o$' % ((180.0/math.pi)*math.asin(b[0]))
+                #label=r'%.0f$^o$' % ((180.0/math.pi)*math.asin(b[0]))
                 plt.semilogy(wplot,self.P,label=label,linewidth=3)
                 #label=r'Tlyr$_b$: %.1f GHz' % (f)
                 #plt.semilogy(self.Tb_lyr[i],self.P,label=label)

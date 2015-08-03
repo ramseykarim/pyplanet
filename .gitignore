@@ -10,4 +10,4 @@
 *.pyc
 Documentation/coordinateSystems.docx
 *.log
-
+Output/

@@ -273,7 +273,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     #-# DEBUG START #-#
     #-#print 'RAYPATH:  ',ds[0],r4ds[0]-r4ds[1], ds[0]/(r4ds[0]-r4ds[1]),b,1.0/mu
     dsmu = []
-    for i in range(1500):
+    for i in range(min(len(ds),len(r4ds))-1):
         dsmu.append(ds[i]/(r4ds[i]-r4ds[i+1]))
     plt.figure('test_ds')
     plt.plot(dsmu)

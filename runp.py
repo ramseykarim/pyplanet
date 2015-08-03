@@ -22,6 +22,9 @@ def splitFile():
 
 oldFreqs = [8.46,14.94,22.46,43.34]
 newFreqs = [1.46,2.44,3.04,3.44,4.42,5.45,5.9,6.45,7.45,8.58,9.61,10.38,11.41,13.18,14.21,15.18,16.21,17.38,22.45,23.45,24.45,25.45]
+newFreqsLo = [ 1.46, 2.44, 3.04, 3.44, 4.42, 5.45, 5.9]
+newFreqsMi = [ 6.45, 7.45, 8.58, 9.61,10.38,11.41,13.18]
+newFreqsHi = [14.21,15.18,16.21,17.38,22.45,23.45,24.45,25.45]
 
 freqs = oldFreqs
 freqs=10.
@@ -49,7 +52,8 @@ j.run('reuse','disc',outputType='batch')
 dfreq,dTB = splitFile()
 
 fp = open('runpResults.dat','a')
-s = sys.argv[1]+'\t'
+fn = sys.argv[1].split('/')
+s = fn[-1]+'\t'
 fp.write(s)
 s = ''
 for i,f in enumerate(nfreq):

@@ -310,7 +310,7 @@ class Atmosphere:
         ### Check that P is monotonically increasing
         monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
-            self.gas = np.fliplr(np.gas)
+            self.gas = np.fliplr(self.gas)
             monotonic = np.all(np.diff(self.gas[self.config.C['P']])>0.0)
         if not monotonic:
             print "Error in "+gasFile+".  Pressure not monotonically increasing"

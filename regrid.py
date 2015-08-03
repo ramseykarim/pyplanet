@@ -40,9 +40,9 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
     regrid = regridType.split()
 
     #set default Pmin/Pmax
-    if Pmin==None:
+    if Pmin==None or Pmin=='auto':
         Pmin = min(atm.gas[atm.config.C['P']])
-    if Pmax==None:
+    if Pmax==None or Pmin=='auto':
         Pmax = max(atm.gas[atm.config.C['P']])
 
     #set Pgrid or zstep(not yet)

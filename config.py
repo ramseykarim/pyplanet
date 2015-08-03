@@ -136,12 +136,16 @@ class planetConfig:
                     if w!='-':
                         w = w.upper()
                         self.C[w] = i
+                if 'DZ' not in self.C.keys():
+                    self.C['DZ'] = i+1
             elif tok == 'clouds':
                 self.Cl = {}
                 for i,w in enumerate(data):
                     if w!='-':
                         w = w.upper()
                         self.Cl[w] = i
+                if 'DZ' not in self.Cl.keys():
+                    self.Cl['DZ'] = i+1
             elif tok == 'regridtype':
                 self.regridType = line
             elif tok == 'pmin':
