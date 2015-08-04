@@ -13,6 +13,7 @@ print
 print
 
 path = '/Users/ddeboer/Documents/Projects/Planets/pyplanet/Jupiter/mike/set1'
+path = '/indirect/o/ddeboer/pyplanet/Jupiter/mike/set1'
 print path
 
 names_are_set = False
