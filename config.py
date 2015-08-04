@@ -21,6 +21,8 @@ class planetConfig:
         else:
             self.path = planet
         configFile = os.path.join(self.path,configFile)
+        self.possibleConstituents = ['H2','HE','CH4','NH3','H2O','H2S','PH3','CO','CO13','HCN']
+        self.possibleClouds = ['SOLN','H2O','NH4SH','NH3','H2S','CH4','AR','PH3']
 
         print '\n---Setting config for %s---\n' % (planet)
 
@@ -136,16 +138,24 @@ class planetConfig:
                     if w!='-':
                         w = w.upper()
                         self.C[w] = i
+                numRead = len(self.C)
                 if 'DZ' not in self.C.keys():
-                    self.C['DZ'] = i+1
+                    self.C['DZ'] = numRead
+                for i,possible in enumerate(self.possibleConstituents):
+                    if possible.upper() not in self.C.keys():
+                        self.C[possible.upper()] = numRead+1+i
             elif tok == 'clouds':
                 self.Cl = {}
                 for i,w in enumerate(data):
                     if w!='-':
                         w = w.upper()
                         self.Cl[w] = i
+                numRead = len(self.Cl)
                 if 'DZ' not in self.Cl.keys():
-                    self.Cl['DZ'] = i+1
+                    self.Cl['DZ'] = numRead
+                for i,possible in enumerate(self.possibleClouds):
+                    if possible.upper() not in self.Cl.keys():
+                        self.Cl[possible.upper()] = numRead+1+i
             elif tok == 'regridtype':
                 self.regridType = line
             elif tok == 'pmin':
