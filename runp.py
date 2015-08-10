@@ -4,6 +4,7 @@ import planet
 import sys
 import regrid
 import shutil
+import datetime
 
 def splitFile():
     fp = open('specoutputline.dat','r')
@@ -71,3 +72,4 @@ s+='\n'
 fp.write(s)
 fp.close()
 
+print datetime.datetime.now()

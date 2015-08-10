@@ -61,12 +61,18 @@ if indices_are_set:
     end_at = start_at+number_to_use
     batchfile = open('batchplanet','w')
     use_names = names[start_at:end_at]
+    s = "echo 'start' >> date.out"
+    s+= "date >> date.out"
+    batchfile.write(s)
     print "Writing 'batchplanet' with names for "+str(len(use_names))+" files (",
     print str(start_at)+" - "+str(start_at+end_at-1)+" )"
     for name in use_names:
         ffn = os.path.join(path,name)
         s = 'runp.py '+ffn+'\n'
         batchfile.write(s)
+    s = "echo 'stop' >> date.out"
+    s+= "date >> date.out"
+    batchfile.write(s)
     os.chmod('batchplanet',0777)
 else:
     print 'Did not run'
