@@ -65,7 +65,7 @@ if indices_are_set:
     s+= "date >> date.out\n"
     batchfile.write(s)
     print "Writing 'batchplanet' with names for "+str(len(use_names))+" files (",
-    print str(start_at)+" - "+str(start_at+end_at-1)+" )"
+    print str(start_at)+" - "+str(end_at-1)+" )"
     for name in use_names:
         ffn = os.path.join(path,name)
         s = 'runp.py '+ffn+'\n'
