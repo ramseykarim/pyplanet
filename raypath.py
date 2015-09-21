@@ -20,7 +20,7 @@ zHat = np.array([0.0,0.0,1.0])
 plotExist = False
 
 class Ray:
-    def __init__(self,ds=None,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
+    def __init__(self,ds=0.0,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
         self.ds = ds
         self.layer4ds = layer4ds
         self.r4ds = r4ds

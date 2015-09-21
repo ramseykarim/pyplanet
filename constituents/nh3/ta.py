@@ -51,7 +51,7 @@ if False:
     plt.plot(Tvals,alpha)
 
 
-f = [4.0]#, 8.0,20.0]
+f = [2.0]#, 8.0,20.0]
 fclr = ['b','r','g']
 
 

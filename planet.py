@@ -187,11 +187,13 @@ class planet:
                 self.tip = self.bright.path.tip
             if self.bright.path != None and self.rotate == None:
                 self.rotate = self.bright.path.rotate
-            if Tbt == None:  #I've now done away with returning None by returning T_cmb in brightness.py
-                Tbt = [0.0]
+            if Tbt == None:  #I've now done away with returning None by returning T_cmb in brightness.py (at least I thought so...)
+                Tbt = []
+                for i in range(len(freqs)):
+                    Tbt.append(utils.T_cmb)
             else:            #   ... so should always go to 'else'
                 hit_b.append(bv)
-                self.Tb.append(Tbt)
+            self.Tb.append(Tbt)
             if self.outType == 'Image':
                 imtmp.append(Tbt[0])
                 if not (i+1)%self.imSize[0]:

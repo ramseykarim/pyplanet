@@ -1,21 +1,24 @@
 #! /usr/bin/env python
 import os, os.path, argparse
 
-constituents = os.listdir('constituents/')
+overallPath = os.environ['PYPLANETPATH']
+constitPath = os.path.join(overallPath,'constituents')
+
+constituents = os.listdir(constitPath)
 #print constituents
 
 o = argparse.ArgumentParser(prefix_chars='-+')
 for c in constituents:
-    cpth = os.path.join('constituents',c)
+    cpth = os.path.join(constitPath,c)
     if os.path.isdir(cpth):
         acon = '--'+c
         o.add_argument(acon,help='toggle '+c,action='store_true')
 args = o.parse_args()
 argdict = vars(args)
-print argdict
+#print argdict
 
 for c in constituents:
-    cpth = os.path.join('constituents',c)
+    cpth = os.path.join(constitPath,c)
     if os.path.isdir(cpth):
         fil = os.listdir(cpth)
         if 'use.txt' in fil:

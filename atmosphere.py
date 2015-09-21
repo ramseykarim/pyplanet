@@ -272,7 +272,9 @@ class Atmosphere:
         for line in fp:
             lineno+=1
             data = line.split()
-            if line[0]=='!' or len(data) < 4 or lineno<=numHeaderLines:
+            skip_row = line[0]=='!' or len(data) < 4 or lineno<=numHeaderLines
+            ######put in something to eliminate the need for numHeaderLines..........
+            if skip_row:
                 if verbose:
                     print '\tHEADER: '+line,
                 continue

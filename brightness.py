@@ -172,8 +172,7 @@ class brightness():
                 label=r'%.1f cm' % (30.0/f)
                 pl = list(self.layerAlpha[i])
                 del pl[0]
-                #print 'Why do I have to delete a layerAlpha element?  [brightness:L180]'
-                ##==> because alpha is at the layer boundaries, so there are n+1 of them
+                #delete because alpha is at the layer boundaries, so there are n+1 of them
                 plt.loglog(pl,self.P,label=label)
             plt.legend()
             v = list(plt.axis())
