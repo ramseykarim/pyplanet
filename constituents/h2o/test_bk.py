@@ -27,6 +27,6 @@ for setNo in range(len(r.setInd)):
     iFig+=1
     r.plt.plot(r.dset[setNo][1][0],r.dset[setNo][1][1],'*')
     r.plt.errorbar(r.dset[setNo][1][0],r.dset[setNo][1][1],r.dset[setNo][1][2],fmt='*')
-    r.plt.plot(f,a)
-    r.plt.plot(f,b)
+    r.plt.plot(f,a,'r')
+    r.plt.plot(f,b,'b')
     r.plt.title(str(r.dset[setNo][0]))

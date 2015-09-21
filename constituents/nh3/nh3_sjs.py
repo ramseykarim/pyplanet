@@ -113,15 +113,14 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
             use = Joiner
         else:
             use = Interp
-        if use == Interp:
-            GH2.append(  GH2[Spilker]  + (GH2[Spilker] -GH2[Joiner]) /(fLower-fHigher)*(f - fLower) )
-            GHe.append(  GHe[Spilker]  + (GHe[Spilker] -GHe[Joiner]) /(fLower-fHigher)*(f - fLower) )
-            GNH3.append( GNH3[Spilker] + (GNH3[Spilker]-GNH3[Joiner])/(fLower-fHigher)*(f - fLower) )
-            ZH2.append(  ZH2[Spilker]  + (ZH2[Spilker] -ZH2[Joiner]) /(fLower-fHigher)*(f - fLower) )
-            ZHe.append(  ZHe[Spilker]  + (ZHe[Spilker] -ZHe[Joiner]) /(fLower-fHigher)*(f - fLower) )
-            ZNH3.append( ZNH3[Spilker] + (ZNH3[Spilker]-ZNH3[Joiner])/(fLower-fHigher)*(f - fLower) )
-            C.append(    C[Spilker]    + (C[Spilker]   -C[Joiner])   /(fLower-fHigher)*(f - fLower) )
-            D.append(    D[Spilker]    + (D[Spilker]   -D[Joiner])   /(fLower-fHigher)*(f - fLower) )
+            GH2[Interp]  = GH2[Spilker]  + (GH2[Spilker] -GH2[Joiner]) /(fLower-fHigher)*(f - fLower)
+            GHe[Interp]  = GHe[Spilker]  + (GHe[Spilker] -GHe[Joiner]) /(fLower-fHigher)*(f - fLower)
+            GNH3[Interp] = GNH3[Spilker] + (GNH3[Spilker]-GNH3[Joiner])/(fLower-fHigher)*(f - fLower)
+            ZH2[Interp]  = ZH2[Spilker]  + (ZH2[Spilker] -ZH2[Joiner]) /(fLower-fHigher)*(f - fLower)
+            ZHe[Interp]  = ZHe[Spilker]  + (ZHe[Spilker] -ZHe[Joiner]) /(fLower-fHigher)*(f - fLower)
+            ZNH3[Interp] = ZNH3[Spilker] + (ZNH3[Spilker]-ZNH3[Joiner])/(fLower-fHigher)*(f - fLower)
+            C[Interp]    = C[Spilker]    + (C[Spilker]   -C[Joiner])   /(fLower-fHigher)*(f - fLower)
+            D[Interp]    = D[Spilker]    + (D[Spilker]   -D[Joiner])   /(fLower-fHigher)*(f - fLower)
         delta = D[use]*P_nh3
         for i in range(nlin):
             gamma = pow((T0/T),n_dvl)*(GH2[use]*P_h2 + GHe[use]*P_he + G0[i]*GNH3[use]*P_nh3)
