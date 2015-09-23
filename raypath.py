@@ -20,7 +20,7 @@ zHat = np.array([0.0,0.0,1.0])
 plotExist = False
 
 class Ray:
-    def __init__(self,ds=0.0,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
+    def __init__(self,ds=None,layer4ds=None,r4ds=None,P4ds=None,doppler=None,tip=None,rotate=None,rNorm=None):
         self.ds = ds
         self.layer4ds = layer4ds
         self.r4ds = r4ds
@@ -103,6 +103,7 @@ def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=True):
         b = np.array([b[0],b[1],zQ])
         edge = rNorm * __rotate2planet__(rotate,tip,b)
     except ValueError:
+        b = None
         edge = None
 
     del zQ_Trial, pclat_zQ_Trial, r_zQ_Trial, r_pclat_zQ_Trial, geoid, xx, yy
@@ -274,7 +275,11 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     #-#print 'RAYPATH:  ',ds[0],r4ds[0]-r4ds[1], ds[0]/(r4ds[0]-r4ds[1]),b,1.0/mu
     dsmu = []
     for i in range(min(len(ds),len(r4ds))-1):
-        dsmu.append(ds[i]/(r4ds[i]-r4ds[i+1]))
+        if abs(r4ds[i] - r4ds[i+1])<1E-6:
+            dsmuappend = 0.001
+        else:
+            dsmuappend = ds[i]/(r4ds[i]-r4ds[i+1])
+        dsmu.append(dsmuappend)
     plt.figure('test_ds')
     plt.plot(dsmu)
     plt.plot([0,1499],[1.0/mu,1.0/mu])

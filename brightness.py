@@ -65,6 +65,7 @@ class brightness():
         # get path lengths (ds_layer) vs layer number (num_layer) - currently frequency independent refractivity
         self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbose=verbose,plot=plot)
         if self.path.ds == None:
+            print 'Off planet'
             self.Tb = []
             for j in range(len(freqs)):
                 self.Tb.append(utils.T_cmb)
@@ -115,7 +116,7 @@ class brightness():
                     a1 = alpha.getAlpha(fshifted[0],T[ii1],P[ii1],atm.gas[:,ii1],atm.config.C,atm.cloud[:,ii1],atm.config.Cl,units=alphaUnits,verbose=False)
                     a0 = alpha.getAlpha(fshifted[1],T[ii],P[ii],atm.gas[:,ii],atm.config.C,atm.cloud[:,ii],atm.config.Cl,units=alphaUnits,verbose=False)
                 dtau = (a0 + a1)*ds/2.0
-                taus.append(self.tau[ii][j] + dtau)         # this is tau_(i+1)
+                taus.append(self.tau[i][j] + dtau)         # this is tau_(i+1)
                 T1 = atm.gas[atm.config.C['T']][ii1]
                 T0 = atm.gas[atm.config.C['T']][ii]
                 
@@ -125,9 +126,8 @@ class brightness():
                 #    Tbs.append( self.Tb_lyr[i][j] + dTb )
                 else:
                     Ws.append( a1*math.exp(-taus[j]) )                  # this is W_(i+1) for non disc average
-                dTb = ( T1*Ws[j]/scriptR(T1,freqs[j]) + T0*self.W[ii][j]/scriptR(T0,freqs[j]) )*ds/2.0
+                dTb = ( T1*Ws[j]/scriptR(T1,freqs[j]) + T0*self.W[i][j]/scriptR(T0,freqs[j]) )*ds/2.0
                 Tbs.append( self.Tb_lyr[i][j] + dTb)
-                
             self.tau.append(taus)
             self.W.append(Ws)
             self.Tb_lyr.append(Tbs)
@@ -136,60 +136,68 @@ class brightness():
         # final spectrum
         self.Tb = []
         for j in range(len(freqs)):
-            self.Tb.append(self.Tb_lyr[-1][j])
+            top_Tb_lyr = self.Tb_lyr[-1][j]
+            if top_Tb_lyr < utils.T_cmb:
+                top_Tb_lyr = utils.T_cmb
+            self.Tb.append(top_Tb_lyr)
         self.tau = np.array(self.tau).transpose()
         self.W = np.array(self.W).transpose()
         self.Tb_lyr = np.array(self.Tb_lyr).transpose()
 
-        if plot:
-            # save a local copy of
-            self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
-            self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
-            #####-----Weigthing functions
-            plt.figure('radtran')
-            plt.subplot(121)
-            for i,f in enumerate(freqs):
-                #label=r'$\tau$: %.1f GHz' % (f)
-                #plt.semilogy(self.tau[i],self.P,label=label)
-                if normW4plot:
-                    wplot = self.W[i]/np.max(self.W[i])
-                else:
-                    wplot = self.W[i]
-                label=r'$W$: %.1f GHz' % (f)
-                label=r'%.1f cm' % (30.0/f)
-                #label=r'%.0f$^o$' % ((180.0/math.pi)*math.asin(b[0]))
-                plt.semilogy(wplot,self.P,label=label,linewidth=3)
-                #label=r'Tlyr$_b$: %.1f GHz' % (f)
-                #plt.semilogy(self.Tb_lyr[i],self.P,label=label)
-            plt.legend()
-            plt.axis(ymin=100.0*math.ceil(self.P[-1]/100.0), ymax=1.0E-7*math.ceil(self.P[0]/1E-7))
-            #plt.xlabel('units')
-            plt.ylabel('P [bars]')
-            #####-----Alpha
-            plt.figure('alpha')
-            for i,f in enumerate(freqs):
-                label=r'$\alpha$: %.1f GHz' % (f)
-                label=r'%.1f cm' % (30.0/f)
-                pl = list(self.layerAlpha[i])
-                del pl[0]
-                #delete because alpha is at the layer boundaries, so there are n+1 of them
-                plt.loglog(pl,self.P,label=label)
-            plt.legend()
-            v = list(plt.axis())
-            v[2] = 100.0*math.ceil(self.P[-1]/100.0)
-            v[3] = 1.0E-7*math.ceil(self.P[0]/1E-7)
-            plt.axis(v)
-            #plt.legend()
-            #plt.xlabel('units')
-            plt.ylabel('P [bars]')
-            #####-----Brightness temperature
-            plt.figure('brightness')
-            lt = '-'
-            if (len(self.Tb)==1):
-                lt = 'o'
-            plt.plot(freqs,self.Tb,lt)
-            plt.xlabel('Frequency [GHz]')
-            plt.ylabel('Brightness temperature [K]')
+        try:
+            if plot:
+                # save a local copy of
+                self.P = atm.gas[atm.config.C['P']][0:len(self.W[0])]
+                self.z = atm.gas[atm.config.C['Z']][0:len(self.W[0])]
+                    
+                #####-----Weigthing functions
+                plt.figure('radtran')
+                plt.subplot(121)
+                for i,f in enumerate(freqs):
+                    #label=r'$\tau$: %.1f GHz' % (f)
+                    #plt.semilogy(self.tau[i],self.P,label=label)
+                    if normW4plot:
+                        wplot = self.W[i]/np.max(self.W[i])
+                    else:
+                        wplot = self.W[i]
+                    label=r'$W$: %.1f GHz' % (f)
+                    label=r'%.1f cm' % (30.0/f)
+                    #label=r'%.0f$^o$' % ((180.0/math.pi)*math.asin(b[0]))
+                    plt.semilogy(wplot,self.P,label=label,linewidth=3)
+                    #label=r'Tlyr$_b$: %.1f GHz' % (f)
+                    #plt.semilogy(self.Tb_lyr[i],self.P,label=label)
+                plt.legend()
+                plt.axis(ymin=100.0*math.ceil(self.P[-1]/100.0), ymax=1.0E-7*math.ceil(self.P[0]/1E-7))
+                #plt.xlabel('units')
+                plt.ylabel('P [bars]')
+                #####-----Alpha
+                plt.figure('alpha')
+                for i,f in enumerate(freqs):
+                    label=r'$\alpha$: %.1f GHz' % (f)
+                    label=r'%.1f cm' % (30.0/f)
+                    pl = list(self.layerAlpha[i])
+                    del pl[0]
+                    #delete because alpha is at the layer boundaries, so there are n+1 of them
+                    plt.loglog(pl,self.P,label=label)
+                plt.legend()
+                v = list(plt.axis())
+                v[2] = 100.0*math.ceil(self.P[-1]/100.0)
+                v[3] = 1.0E-7*math.ceil(self.P[0]/1E-7)
+                plt.axis(v)
+                #plt.legend()
+                #plt.xlabel('units')
+                plt.ylabel('P [bars]')
+                #####-----Brightness temperature
+                plt.figure('brightness')
+                lt = '-'
+                if (len(self.Tb)==1):
+                    lt = 'o'
+                plt.plot(freqs,self.Tb,lt)
+                plt.xlabel('Frequency [GHz]')
+                plt.ylabel('Brightness temperature [K]')
+        except:
+            print 'Plotting broke'
+            
         del taus, Tbs, Ws
 
         return self.Tb
