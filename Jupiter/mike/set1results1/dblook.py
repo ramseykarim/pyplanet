@@ -221,4 +221,3 @@ if __name__ == "__main__":
     l.plotModel_IndivSort()
     plt.show()
 
-    modatm.am07tt1nc2cd3gg3
