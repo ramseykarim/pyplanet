@@ -68,9 +68,14 @@ a_kd = []
 a_bg = []
 a_sjs = []
 a_sjsd = []
+jupdat = np.loadtxt('jupiter.paulSolar')
+jupiterTestP = jupdat[:,2]
+jupiterTestT = jupdat[:,1]
 for i in range(len(jupiterTestP)):
     T = jupiterTestT[i]
     P = jupiterTestP[i]
+    if P<0.01:
+        continue
     a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
     a_bg.append(nh3_bg.alpha(f,T,P,X_partial,P_dict,otherPar))
     a_sjs.append(nh3_sjs.alpha(f,T,P,X_partial,P_dict,otherPar))
@@ -101,7 +106,7 @@ s = r'%.1f GHz:  %.3f H$_2$, %.3f He, %.3f NH$_3$' % (f[0],X_h2,X_he,X_nh3)
 plt.title(s)
 print X_partial
 
-if True:
+if False:
     fp = open('juptest.dat','w')
     f = [1.4,4.0, 8.0,20.0]
     fclr = ['c','b','r','g']

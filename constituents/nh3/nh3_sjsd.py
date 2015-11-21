@@ -3,7 +3,7 @@ import numpy as np
 
 def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     PLower = 10.0
-    PMid = 55.0
+    PMid = 35.0
     PHigher = 100.0
     wtype = 'linear'
     if P < PLower or P > PHigher:

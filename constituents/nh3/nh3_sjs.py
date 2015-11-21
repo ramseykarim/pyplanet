@@ -69,7 +69,10 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     # Set Spilker
     rexp = 8.79*math.exp(-T/83.0)
     GH2a = math.exp(9.024 - T/20.3) - 0.9918 + P_h2
-    GH2a = math.pow(GH2a,rexp)
+    try:
+        GH2a = math.pow(GH2a,rexp)
+    except ValueError:
+        GH2a = 0.0
     if GH2a < EPS:  # use Joiner regardless
         GH2.append( 1.690 )
         GHe.append( 0.750 )
