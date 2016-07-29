@@ -1,6 +1,5 @@
 ### This is the file to calculate the radiometric properties of the planets
 import math
-import string
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special as ss
@@ -21,6 +20,7 @@ class brightness():
     def layerAbsorption(self,freqs,atm,alpha,verbose=None,plot=None):
         self.layerAlpha = self.__layerAbsorp__(freqs,atm,alpha,verbose=verbose,plot=plot)
         if plot:
+            P = atm.gas[atm.config.C['P']]
             plt.figure('alpha')
             for i,f in enumerate(freqs):
                 label = '%.1f GHz' % (f)
@@ -29,7 +29,7 @@ class brightness():
             v[2] = 100.0*math.ceil(atm.gas[atm.config.C['P']][-1]/100.0)
             v[3] = 1.0E-7*math.ceil(atm.gas[atm.config.C['P']][0]/1E-7)
             plt.axis(v)
-            plt.xlabel(alphaUnits)
+            plt.xlabel(utils.alphaUnits)
             plt.ylabel('P [bars]')
             plt.legend()
             #lgd=plt.legend(loc='upper left',bbox_to_anchor=(1,1))
@@ -243,7 +243,7 @@ class brightness():
         s = '%s (%d x %d)' % (filename,i+1,j+1)
         return s
 
-    def saveWeight(self,filename=None,path='.'):
+    def saveWeight(self,norm=False,filename=None,path='.'):
         if filename == None:
             filename = 'wgt.out'
         os.path.join(path,filename)
@@ -251,13 +251,19 @@ class brightness():
         s = '#P  \tz  \t'
         for f in self.freqs:
             s+='%.2f\t' % (f)
-        s+='GHz\n'
+        s=s.strip()+'GHz\n'
         fp.write(s)
+        scale = []
+        for i in range(len(self.freqs)):
+            if norm:
+                scale.append(np.max(self.W[i]))
+            else:
+                scale.append(1.0)
         for j in range(len(self.P)):
             s = '%s\t%.2f\t' % (repr(self.P[j]),self.z[j])
             for i in range(len(self.freqs)):
-                s+='%s\t' % (repr(self.W[j]))
-            s+='\n'
+                s+='%s\t' % (repr(self.W[i][j]/scale[i]))
+            s=s.strip()+'\n'
             fp.write(s)
         s = '%s (%d x %d)' % (filename,i+1,j+1)
         return s

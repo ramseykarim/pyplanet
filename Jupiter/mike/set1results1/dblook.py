@@ -5,21 +5,24 @@ import copy
 import sqlite3 as sqlite
 
 class Look():
-    def __init__(self,fn='resp.db',setNo=1,**par):
+    def __init__(self,fn='resp.db',setName='Set1HI',**par):
         """Look is a class that reads in the sql database and generates the plots.
-           Right now, there is only set1 (the first run of the 2000+ models provided).
+           Right now, there is only set1 (the first run of the 2000+ models provided)
+                      but in two tables (low freq (Set1) and hi freq (Set1HI))
            Parameters are:
               use_T:  which T value to use (only one).  For set1, these are a polar limb profile at
                              0.0, 0.2, 0.4, 0.6, 0.7, 0.8, 0.9 (use_T=0...6] and disc ave [7]
               use_limb:  which T values to use for limb plot.
               use_model = list of numbered models in database, alphabetical by model name
-              use_freq = list of frequency numbers.  For set1:  1.46, 2.44, 3.04, 3.44, 4.42, 5.45,
+              use_freq = list of frequency numbers.  
+                              For set1:  1.46, 2.44, 3.04, 3.44, 4.42, 5.45,
                               5.9, 6.45, 7.45, 8.58, 9.61, 10.38, 11.41, 13.18, 14.21, 15.18, 16.21,
                               17.38, 22.45, 23.45, 24.45, 25.45 [0...21]
+                              For Set1HI:  29.98, 41.81, 58.31, 81.31, 113.40, 158.14, 220.54, 307.56, 428.92, 598.16
               switch_to_one_plot_at = don't split them out if below this number of plots"""
         
         if fn is not None:  ###If given a name, this will read in the database on creating class instance
-            self.readData(fn,setNo)
+            self.readData(fn,setName)
             self.fn = fn
         self.allowedPar = {'use_T':int,  ###These are the allowed parameters in the plot outputs and their types
                            'use_model':list,
@@ -35,19 +38,19 @@ class Look():
             numModels = 10
         try:
             frn = range(len(self.freq))   ###self.freq contains all of the frequencies
-            self.setpar(use_freq=frn)   ###This selects all frequencies
+            self.setpar(use_freq=frn)     ###This selects all frequencies
         except AttributeError:
             pass
         self.setpar(**par)    ###This sets any other par you've fed it
         self.axesRange = [0,numModels,110,450]
         
-    def readData(self,fn,setNo):
+    def readData(self,fn,setName):
         """Read in data and set arrays.  For the specified set it populates:
                  self.model:  names of models e.g. am07tt1nc2cd3gg3
                  self.freq:   list of frequencies
                  self.Tdata:  T data for that model/freq -- limb and disc ave"""
         db = sqlite.connect(fn)   ###This just reads in the sql and makes the arrays described above.
-        self.set = 'Set'+str(setNo)
+        self.set = setName
         c = db.cursor()
         c_exec = "PRAGMA TABLE_INFO('%s')" % (self.set)
         c.execute(c_exec)
@@ -107,7 +110,7 @@ class Look():
         for umn in self.use_model:
             nums.append(self.model.index(umn)) #since each model should only be there once...
         self.use_model=nums
-    def info(self,setNo=1):
+    def info(self,setName='Set1HI'):
         """Reads and displays the sql database information"""
         db = sqlite.connect(self.fn)
         c = db.cursor()
@@ -157,7 +160,7 @@ class Look():
             models = self.Tdata[:,f,self.use_T]
             g = '%.2f GHz' % (self.freq[f])
             plt.plot(models,label=g)
-            x = 50. + self.freq[f]*50.
+            x = 0.8*len(self.Tdata)/len(self.freq)*f
             plt.text(x,self.Tdata[int(x)][f][self.use_T],g)
         plt.title('db order')
         plt.xlabel('Model #')
@@ -174,7 +177,7 @@ class Look():
             T_sort_individually.sort()
             g = '%.2f GHz' % (self.freq[f])
             plt.plot(T_sort_individually,label=g)
-            x = 50 + self.freq[f]*50.
+            x = 0.8*len(self.Tdata)/len(self.freq)*f
             plt.text(x,T_sort_individually[int(x)],g)
         plt.title('Sort all')
         plt.xlabel('Model #')
@@ -203,7 +206,7 @@ class Look():
                     Tsort_on_one[-1].append(self.Tdata[sv[1]][iif][self.use_T])
                 g = '%.2f GHz' % (self.freq[iif])
                 plt.plot(Tsort_on_one[iif],label=g)
-                x = 50 + self.freq[iif]*50.
+                x = 0.8*len(self.Tdata)/len(self.freq)*iif
                 plt.text(x,Tsort_on_one[iif][int(x)],g)
             plt.title('Sort on '+str(self.freq[f])+' GHz')
             plt.xlabel('Model #')
@@ -212,7 +215,7 @@ class Look():
 
 ###Script that runs to make the plots
 if __name__ == "__main__":
-    l = Look('resp.db',1)
+    l = Look('resp.db','Set1HI')
     l.info()
     l.plotSpectra()
     l.setpar(use_freq=range(len(l.freq)))

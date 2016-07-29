@@ -3,15 +3,12 @@ import math
 import string
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import special
 import atmosphere as atm
 import config as  pcfg
 import alpha
 import brightness as bright
 import utils
 import datetime
-import os.path
-import TBfile
 
 version = '0.5'
 
@@ -403,33 +400,42 @@ class planet:
     
     def __freqRequest__(self,freqs, freqUnit):
         """ Internal processing of frequency list.
-               if there is a scalar, it is made to a list of length 1
-               if there is a list of three it is assumed to be start, stop, step
-                    if the step is negative, it is assumed as a log step
-               if it is a list!=3, the list is used"""
+               if freqs is a string, it reads frequencies from that file
+               if freqs is a scalar, it is made to a list of length 1
+               if freqs is a list with first entry a string:
+                    'r'ange:  sets range with 3 following values in list as start,stop,step
+                        if the step is negative, it is assumed as a log step
+                    that is currently the only option
+               otherwise the list is used"""
         self.header['freqs'] = '# freqs request: '+str(freqs)+' '+freqUnit+'\n'
         ### Process frequency range "request"
         if type(freqs)==str:
+            print 'Loading frequencies from file:  ',freqs
             freqs = np.loadtxt(freqs)
-            freqs = list(freqs)
-        if type(freqs) != list:
+            freqs = list(freqs)  #convert numpy array back to list (for no good reason really)
+        elif type(freqs) != list:
             freqs = [freqs]
-        elif len(freqs)==3:
-            print 'Computing frequency range (len(freqs)==3)'
-            fstart=freqs[0]
-            fstop=freqs[1]
-            fstep=freqs[2]
-            freqs=[]
-            f=fstart
-            if (fstep<0.0):  # do log steps
-                fstep = abs(fstep)
-                while f<fstop:
-                    freqs.append(f)
-                    f*=fstep
+        elif type(freqs[0])==str:
+            if freqs[0][0].lower()=='r':
+                #this used to be how to make a range...#elif len(freqs)==3:
+                print 'Computing frequency range (len(freqs)==3)'
+                fstart=freqs[1]
+                fstop=freqs[2]
+                fstep=freqs[3]
+                freqs=[]
+                f=fstart
+                if (fstep<0.0):  # do log steps
+                    fstep = abs(fstep)
+                    while f<fstop:
+                        freqs.append(f)
+                        f*=fstep
+                else:
+                    while f<=fstop:
+                        freqs.append(f)
+                        f+=fstep
             else:
-                while f<=fstop:
-                    freqs.append(f)
-                    f+=fstep
+                print 'No other string allowed here yet...'
+                freqs=None
         for i in range(len(freqs)):
             freqs[i]*=utils.Units[freqUnit]/utils.Units[utils.processingFreqUnit]
         if len(freqs) > 1:

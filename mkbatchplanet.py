@@ -4,10 +4,10 @@ import sys
 
 print """Process is:
     make filenames.txt with input files
-    'mkbatchplanet.py' with filenames in filenames.txt -- be sure to set range in code
+    'mkbatchplanet.py' with filenames in filenames.txt -- be sure to set range as arguments
         ==> writes 'batchplanet'
     set any parameters (use.py, freqs in runp.py, ...)
-    'batchplanet'     does runp.py with filenames from filenames.txt
+    'batchplanet'     does runp.py with filenames from filenames.txt (use screen -S sessionname batchplanet)
         ==> writes 'runpResults.dat'"""
 print
 print

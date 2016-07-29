@@ -71,9 +71,13 @@ a_sjsd = []
 jupdat = np.loadtxt('jupiter.paulSolar')
 jupiterTestP = jupdat[:,2]
 jupiterTestT = jupdat[:,1]
+jupiterTestXH2 = jupdat[:,3]
+jupiterTestXHe = jupdat[:,4]
+jupiterTestXNH3 = jupdat[:,6]
 for i in range(len(jupiterTestP)):
     T = jupiterTestT[i]
     P = jupiterTestP[i]
+    X_partial = [jupiterTestXH2[i],jupiterTestXHe[i],jupiterTestXNH3[i]]
     if P<0.01:
         continue
     a_kd.append(nh3_kd.alpha(f,T,P,X_partial,P_dict,otherPar))
@@ -103,6 +107,8 @@ plt.yscale('log')
 plt.xlabel('Pressure [bars]')
 plt.ylabel(r'$\alpha$ [dB/km]')
 s = r'%.1f GHz:  %.3f H$_2$, %.3f He, %.3f NH$_3$' % (f[0],X_h2,X_he,X_nh3)
+s = r'%.3f H$_2$, %.3f He, %.3f NH$_3$' % (X_h2,X_he,X_nh3)
+s = 'jupiter.paulSolar'
 plt.title(s)
 print X_partial
 
