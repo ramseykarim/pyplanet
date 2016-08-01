@@ -55,7 +55,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=False):
     P_h2 = P*X[P_dict['H2']]
     P_he = P*X[P_dict['HE']]
     P_nh3= P*X[P_dict['NH3']]
-    Pscale = 1.0 + P/2.0E4 #ad hoc to make this match Berge-Gulkis for deep Jupiter atmosphere
+    Pscale = 1.0 + P/1.0E5 #ad hoc to make this match Berge-Gulkis for deep Jupiter atmosphere
 
     # Set Joiner
     GH2 = [1.690]
