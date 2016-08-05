@@ -175,8 +175,8 @@ def alpha(freq,T,P,X,X_dict,otherPar,units='dBperkm',path='./',verbose=False):
     elif T > Ttab[-1]:     ### extrapolate up in T using Joiner
         nearest = -1
         Tnear = Ttab[nearest]
-        jjnear = h2_jj.alpha(freq,Tnear,P,X,X_dict)
-        jj = h2_jj.alpha(freq,T,P,X,X_dict)
+        jjnear = h2_jj.alpha(freq,Tnear,P,X,X_dict,otherPar)
+        jj = h2_jj.alpha(freq,T,P,X,X_dict,otherPar)
         for ii in range(len(freq)):
             #h2-h2
             xx = h2tableList['eh2h2'] + h2stateList[h2state]

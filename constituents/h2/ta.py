@@ -1,10 +1,11 @@
 import h2_jj
+import h2_jj_ddb
 import h2_orton
 import matplotlib.pyplot as plt
 import numpy as np
 
 verbosity = True
-otherPar = {'h2_state':'e','newset':True}
+otherPar = {'h2state':'e','h2newset':True}
 
 ###############Test orton vs joiner in freq
 JJCMP = True
@@ -22,7 +23,7 @@ if JJCMP:
 
     Tease = [30.0,100.0,300.0,600.0]
     for T in Tease:
-        a = h2_jj.alpha(f,T,P,X,X_dict)
+        a = h2_jj_ddb.alpha(f,T,P,X,X_dict,otherPar)
         s = 'joiner %.0f K' % (T)
         plt.semilogy(f,a,'--',label=s)
         if T==Tease[0]:
@@ -50,7 +51,7 @@ if JJCMP:
 ###############Test orton vs joiner in temperature
 T_TEST = True
 if T_TEST:
-    otherPar['newset'] = False
+    otherPar['h2newset'] = False
     plt.figure(200)
     P = 10.0
     X_ch4 = 3.3E-5
@@ -67,12 +68,12 @@ if T_TEST:
         orton=[]
         orton_lin = []
         for T in Tease:
-            a = h2_jj.alpha(f,T,P,X,X_dict)
+            a = h2_jj_ddb.alpha(f,T,P,X,X_dict,otherPar)
             jj.append(a[0])
             a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,verbose=verbosity)
             orton.append(a[0])
         s = 'joiner %.0f GHz' % (f[0])
-        plt.semilogy(Tease,jj,label=s)
+        plt.semilogy(Tease,jj,'--',label=s)
         s = 'orton %.0f GHz' % (f[0])
         plt.semilogy(Tease,orton,label=s)
     plt.legend()
@@ -93,14 +94,16 @@ if JQSRT:
     X_he = 0.6
     X_h2 = 1.0 - (X_ch4+X_he)
     X_dict={'H2':0,'HE':1,'CH4':2}
+    otherPar['h2newset'] = False
     X=[X_h2,X_he,X_ch4]
 
     h2stateList = ['e','n']
 
     h2_orton.readInputFiles(f)
     for h2state in h2stateList:  # but don't need to reset on h2state type, just frequencies
+        otherPar['h2state']=h2state
         T = 77.0
-        a = h2_orton.alpha(f,T,P,X,X_dict,units='invcm',newset=False,h2_state=h2state,verbose=False)
+        a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,units='invcm',verbose=False)
         rho = (P/1.01325)*(273.15/T)
         ff = np.array(f)/29.97
         aa = np.array(a)*1.0E7/rho**2
@@ -108,7 +111,7 @@ if JQSRT:
         plt.plot(ff,aa,label=s)
 
         T = 195.0
-        a = h2_orton.alpha(f,T,P,X,X_dict,units='invcm',newset=False,h2_state=h2state,verbose=False)
+        a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,units='invcm',verbose=False)
         rho = (P/1.01325)*(273.15/T)
         ff = np.array(f)/29.97
         aa = np.array(a)*1.0E7/rho**2
@@ -116,7 +119,7 @@ if JQSRT:
         plt.plot(ff,aa,label=s)
 
         T = 292.0
-        a = h2_orton.alpha(f,T,P,X,X_dict,units='invcm',newset=False,h2_state=h2state,verbose=False)
+        a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,units='invcm',verbose=False)
         rho = (P/1.01325)*(273.15/T)
         ff = np.array(f)/29.97
         aa = np.array(a)*1.0E7/rho**2
