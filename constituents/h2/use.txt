@@ -1,4 +1,4 @@
-h2_ddb
+h2_jj_ddb
 ----
 h2_orton
 h2_jj

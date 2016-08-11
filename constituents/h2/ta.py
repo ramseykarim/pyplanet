@@ -24,7 +24,7 @@ if JJCMP:
     Tease = [30.0,100.0,300.0,600.0]
     for T in Tease:
         a = h2_jj_ddb.alpha(f,T,P,X,X_dict,otherPar)
-        s = 'joiner %.0f K' % (T)
+        s = 'jj_ddb %.0f K' % (T)
         plt.semilogy(f,a,'--',label=s)
         if T==Tease[0]:
             otherPar['newset'] = True
@@ -35,13 +35,13 @@ if JJCMP:
         plt.semilogy(f,a,label=s)
         a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,verbose=verbosity)
         s = 'orton (n) %.0f K' % (T)
-        plt.semilogy(f,a)
+        plt.semilogy(f,a,label=s)
 
-    ##import h2_orton_linear
-    ##a = h2_orton_linear.alpha(f,T,P,X,X_dict,h2_state='e',newset=True,verbose=verbosity)
-    ##plt.semilogy(f,a,label='orton-lin (e)')
-    ##a = h2_orton_linear.alpha(f,T,P,X,X_dict,h2_state='n',newset=False,verbose=verbosity)
-    ##plt.semilogy(f,a,label='orton-lin (n)')
+    # import h2_orton_linear
+    # a = h2_orton_linear.alpha(f,T,P,X,X_dict,IQ='e',newset=True,verbose=verbosity)
+    # plt.semilogy(f,a,label='orton-lin (e)')
+    # a = h2_orton_linear.alpha(f,T,P,X,X_dict,IQ='n',newset=False,verbose=verbosity)
+    # plt.semilogy(f,a,label='orton-lin (n)')
 
     plt.legend(loc='lower right')
     plt.xlabel('GHz')
@@ -51,9 +51,10 @@ if JJCMP:
 ###############Test orton vs joiner in temperature
 T_TEST = True
 if T_TEST:
+    h2states = ['e','n']
     otherPar['h2newset'] = False
     plt.figure(200)
-    P = 10.0
+    P = 1.0
     X_ch4 = 3.3E-5
     X_he = 0.1
     X_h2 = 1.0 - (X_ch4+X_he)
@@ -64,18 +65,29 @@ if T_TEST:
     for f in freq:
         print f[0]
         h2_orton.readInputFiles(f)
-        jj=[]
-        orton=[]
-        orton_lin = []
+        jje=[]
+        jjn=[]
+        ortone=[]
+        ortonn=[]
         for T in Tease:
+            otherPar['h2state']='e'
             a = h2_jj_ddb.alpha(f,T,P,X,X_dict,otherPar)
-            jj.append(a[0])
+            jje.append(a[0])
             a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,verbose=verbosity)
-            orton.append(a[0])
-        s = 'joiner %.0f GHz' % (f[0])
-        plt.semilogy(Tease,jj,'--',label=s)
-        s = 'orton %.0f GHz' % (f[0])
-        plt.semilogy(Tease,orton,label=s)
+            ortone.append(a[0])
+            otherPar['h2state']='n'
+            a = h2_jj_ddb.alpha(f,T,P,X,X_dict,otherPar)
+            jjn.append(a[0])
+            a = h2_orton.alpha(f,T,P,X,X_dict,otherPar,verbose=verbosity)
+            ortonn.append(a[0])
+        s = 'jj_ddb(e) %.0f GHz' % (f[0])
+        plt.semilogy(Tease,jje,'--',label=s)
+        s = 'jj_ddb(n) %.0f GHz' % (f[0])
+        plt.semilogy(Tease,jjn,'--',label=s)
+        s = 'orton (e) %.0f GHz' % (f[0])
+        plt.semilogy(Tease,ortone,label=s)
+        s = 'orton (n) %.0f GHz' % (f[0])
+        plt.semilogy(Tease,ortonn,label=s)
     plt.legend()
     plt.xlabel('K')
     plt.ylabel('dB/km')
@@ -83,7 +95,7 @@ if T_TEST:
 
     
 ################ plot to compare with measured values in Birnbaum JQSRT 19:51
-JQSRT = True
+JQSRT = False
 if JQSRT:
     plt.figure(300)
     f = []
