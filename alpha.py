@@ -58,6 +58,8 @@ class alpha:
                     self.absorptionModule[c]=sys.modules[absorber]
                     self.constituent[c] = absorber
                 except ImportError:
+                    s="WARNING:  CAN'T LOAD "+absorber+'\n'
+                    print s*3
                     utils.log(self.log,"Can't load "+absorber,True)
         utils.log(self.log,'Using modules:',True)
         for k in self.constituent:
