@@ -47,6 +47,7 @@ class brightness():
         P = atm.gas[atm.config.C['P']]
         T = atm.gas[atm.config.C['T']]
         utils.log(self.log,'%d layers' % (numLayers),True)
+        #print '\t Computing absorption in layers...'
         for layer in range(numLayers):
             print '\r\tAbsorption in layer %d   ' % (layer+1),
             sys.stdout.flush()

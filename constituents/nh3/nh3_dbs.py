@@ -33,6 +33,7 @@
 #% History:
 #%       written by Kiruthika Devaraj at Georgia Tech,  June, 2011
 #%       converted to python by David DeBoer at UC Berkeley,  July 2012
+#%       updated to Bellotti results DDB Aug 2016
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 import math
 import numpy as np
@@ -82,7 +83,7 @@ def viewsum(arr):
     print np.shape(arr)
     print '+++++++++++++'
 
-def readInputFiles(path,verbose=False):
+def readInputFiles(path,im=0,rm=0,vm=0,verbose=False):
     global fo, Io, Eo, gammaNH3o, H2HeBroad
     global fo_rot, Io_rot, Eo_rot, gNH3_rot, gH2_rot, gHe_rot
     global fo_v2, Io_v2, Eo_v2
@@ -93,8 +94,14 @@ def readInputFiles(path,verbose=False):
     #% foreign gas broadening parameters.
     filename = os.path.join(path,'ammonia_inversion.dat')
     if verbose:
-        print "Reading nh3 inversion lines:  "+filename
+        print "Reading nh3 inversion lines:  ",
     fo,Io,Eo,gammaNH3o,H2HeBroad = np.loadtxt(filename,skiprows=1,unpack=True)
+    if im>0:
+        fo = fo[:-im]
+        Io = Io[:-im]
+        Eo = Eo[:-im]
+        gammaNH3o = gammaNH3o[:-im]
+        H2HeBroad = H2HeBroad[:-im]
     nlin = len(fo)
     if verbose:
         print str(nlin)+' lines'
@@ -105,8 +112,16 @@ def readInputFiles(path,verbose=False):
     #% gH2_rot, gHe_rot are broadening parameters for rotational lines.
     filename=os.path.join(path,'ammonia_rotational.dat')
     if verbose:
-        print "Reading nh3 rotational lines:  "+filename
+        print "Reading nh3 rotational lines:  ",
     fo_rot,Io_rot,Eo_rot,gNH3_rot,gH2_rot,gHe_rot = np.loadtxt(filename,skiprows=1,unpack=True)
+    if rm>0:
+        fo_rot = fo_rot[:-rm]
+        Io_rot = Io_rot[:-rm]
+        Eo_rot = Eo_rot[:-rm]
+        gNH3_rot = gNH3_rot[:-rm]
+        gH2_rot = gH2_rot[:-rm]
+        gHe_rot = gHe_rot[:-rm]
+
     nlin_rot = len(fo_rot)
     if verbose:
         print str(nlin_rot)+' lines'
@@ -116,8 +131,12 @@ def readInputFiles(path,verbose=False):
     #% cm^-1/(molecule./cm^2), Eo_v2 is lower state energy in cm^-1,
     filename = os.path.join(path,'ammonia_rotovibrational.dat')
     if verbose:
-        print "Reading nh3 roto-vibrational lines:  "+filename
+        print "Reading nh3 roto-vibrational lines:  ",
     fo_v2,Io_v2,Eo_v2 = np.loadtxt(filename,skiprows=1,unpack=True)
+    if vm>0:
+        fo_v2 = fo_v2[:-vm]
+        Io_v2 = Io_v2[:-vm]
+        Eo_v2 = Eo_v2[:-vm]
     nlin_v2 = len(fo_v2)
     if verbose:
         print str(nlin_v2)+' lines'
@@ -139,7 +158,7 @@ def alpha(freq,T,P,X,P_dict,otherPar,units='dBperkm',path='./',verbose=True):
     global GHztoMHz, hc, kB, No, R, To, dynesperbar, coef
 
     if len(fo)==0:
-        readInputFiles(path,verbose=verbose)
+        readInputFiles(path,0,1100,4000,verbose=verbose) #use fewer lines
 
     P_h2 = P*X[P_dict['H2']]
     P_he = P*X[P_dict['HE']]
