@@ -8,7 +8,7 @@ import sys
 import raypath as ray
 import os.path
 
-class brightness():
+class Brightness():
     def __init__(self,log=None,verbose=False,plot=False):
         """This calculates the brightness temperature of the planets.
            It must be used with atmosphere and alpha"""

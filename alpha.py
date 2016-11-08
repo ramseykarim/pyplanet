@@ -15,7 +15,7 @@ except:
     print 'No PYPLANETPATH environment variable'
     pyPlanetPath = './'
 
-class alpha:
+class Alpha:
     def __init__(self,path=None,config=None,log=None,verbose=False,plot=False):
         """Reads in absorption formalisms
            Note that they are all in GHz"""
