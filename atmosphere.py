@@ -22,7 +22,7 @@ import regrid
 planetDictionary = {'Jupiter':0,'Saturn':1,'Uranus':2,'Neptune':3}
 
 class Atmosphere:
-    def __init__(self,planet,config='config.par',path=None,log=None,verbose=False,plot=True):
+    def __init__(self,planet,config='config.par',path=None,log=None,verbosity=False,plot=True):
         """reads/computes atmospheres.  This should return:
                self.gas
                self.cloud
@@ -33,14 +33,14 @@ class Atmosphere:
 
         planet = string.capitalize(planet)
         self.planet = planet
-        self.verbose=verbose
+        self.verbosity=verbosity
         self.plot=plot
         self.logFile = utils.setupLogFile(log)
         self.batch = False
         
         print '\n---Atmosphere of %s---' % (planet)
         if type(config) == str:
-            config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
+            config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbosity=verbosity)
         self.config = config
 
         ###Create function dictionaries
@@ -59,11 +59,11 @@ class Atmosphere:
             utils.log(self.logFile,'\tReading from: '+self.config.path,True)
             utils.log(self.logFile,'\tAtmosphere file:  '+self.config.gasFile,True)
             utils.log(self.logFile,'\tCloud file:  '+self.config.cloudFile,True)
-        if verbose:
+        if verbosity:
             print self.config.show()
         # print '\tIf in interactive mode, change any parameters in setpar() before run()'
 
-    def run(self,Pmin=None,Pmax=None,regridType=None,gasType=None,cloudType=None,otherType=None,tweak=True,plot=None,verbose=None):
+    def run(self,Pmin=None,Pmax=None,regridType=None,gasType=None,cloudType=None,otherType=None,tweak=True,plot=None,verbosity=None):
         """This is the standard pipeline"""
         ###Set run defaults
         if Pmin == None:
@@ -72,8 +72,8 @@ class Atmosphere:
             Pmax = self.config.pmax
         if regridType == None:
             regridType = self.config.regridType
-        if verbose==None:
-            verbose = self.verbose
+        if verbosity==None:
+            verbosity = self.verbosity
         if plot==None:
             plot = self.plot
         if gasType==None:
@@ -89,7 +89,7 @@ class Atmosphere:
             print 'Error:  No such gasType: '+gasType
             return 0
         else:
-            self.gasGen[gasType](verbose=verbose)
+            self.gasGen[gasType](verbosity=verbosity)
 
         if not self.batch:
             ### Generate cloud profile (cloudType is 'read' or 'compute')
@@ -97,7 +97,7 @@ class Atmosphere:
                 print 'Error:  No such cloudType: '+cloudType
                 return 0
             else:
-                self.cloudGen[cloudType](verbose=verbose)
+                self.cloudGen[cloudType](verbosity=verbosity)
 
             if tweak:  # This loads and calls the module 'tweakFile'
                 self.tweakAtm()
@@ -107,14 +107,15 @@ class Atmosphere:
                 print 'Error:  no such otherTpe: '+otherType
                 return 0
             else:
-                self.propGen[otherType](verbose=verbose)
+                self.propGen[otherType](verbosity=verbosity)
 
             ### Put onto common grid
             regridded = regrid.regrid(self,regridType=regridType,Pmin=Pmin,Pmax=Pmax)
             self.nAtm = len(self.gas[0])
 
             angularDiameter = 2.0*math.atan(self.layerProperty[self.config.LP['R']][0]/self.config.distance)
-            print 'angular radius = %f arcsec' % ((180.0/np.pi)*3600.0*angularDiameter/2.0)
+            if verbosity:
+                print 'angular radius = %f arcsec' % ((180.0/np.pi)*3600.0*angularDiameter/2.0)
         
             ### Plot data
             if plot:
@@ -237,7 +238,7 @@ class Atmosphere:
         plt.xlabel('Property')
         plt.legend()
 
-    def readGas(self,gasFile=None,numHeaderLines=None,Cdict=None,verbose=False):
+    def readGas(self,gasFile=None,numHeaderLines=None,Cdict=None,verbosity=False):
         """Reads gas profile file as self.gas"""
 
         if gasFile is None:
@@ -275,7 +276,7 @@ class Atmosphere:
             skip_row = line[0]=='!' or len(data) < 4 or lineno<=numHeaderLines
             ######put in something to eliminate the need for numHeaderLines..........
             if skip_row:
-                if verbose:
+                if verbosity:
                     print '\tHEADER: '+line,
                 continue
             pastHeader = True
@@ -342,7 +343,7 @@ class Atmosphere:
         fp.close()
                 
 
-    def readCloud(self,cloudFile=None,numHeaderLines=None,Cldict=None,verbose=False):
+    def readCloud(self,cloudFile=None,numHeaderLines=None,Cldict=None,verbosity=False):
         """Reads in cloud data if we have it..."""
 
         if cloudFile == None:
@@ -377,7 +378,7 @@ class Atmosphere:
         for line in fp:
             lineno+=1
             if line[0]=='!' or lineno<=numHeaderLines:
-                if verbose:
+                if verbosity:
                     print '\tHEADER: '+line,
                 continue
             pastHeader = True
@@ -422,7 +423,7 @@ class Atmosphere:
         self.cloud[self.config.Cl['DZ']] = np.abs(np.append(np.diff(self.cloud[self.config.Cl['Z']]),0.0))
         return self.nCloud
 
-    def readProp(self,otherFile=None,verbose=False):
+    def readProp(self,otherFile=None,verbosity=False):
         """Reads in other property data if we have it..."""
         if otherFile == None:
             otherFile = self.config.otherFile
@@ -469,7 +470,7 @@ class Atmosphere:
 
         return nAtm
 
-    def computeProp(self,verbose=False):
+    def computeProp(self,verbosity=False):
         """This module computes derived atmospheric properties (makes self.layerProperty)"""
         if self.batch:
             print 'Defer computing properties'
@@ -488,7 +489,7 @@ class Atmosphere:
                 iOffset = i
         zOffset = self.gas[self.config.C['Z']][iOffset]
         z_at_p_ref = self.config.Req
-        if verbose:
+        if verbosity:
             print "z,P offset:  ",zOffset,self.gas[self.config.C['P']][iOffset]
         
         for i,zv in enumerate(self.gas[self.config.C['Z']]):
@@ -539,10 +540,10 @@ class Atmosphere:
             self.layerProperty[self.config.LP['g']].append( little_g )
         self.layerProperty = np.array(self.layerProperty)
             
-    def computeCloud(self,verbose=False):
+    def computeCloud(self,verbosity=False):
         """This computes cloud stuff"""
         print 'computeCloud does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
-    def computeGas(self,verbose=False):
+    def computeGas(self,verbosity=False):
         """Computes an atmosphere given stuff"""
         print 'computeGas does nothing yet.  This probably wont do anything since gas/cloud/other will get computed in the same tcm'
         print 'This will probably just call a external tcm module'

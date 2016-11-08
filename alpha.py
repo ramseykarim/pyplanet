@@ -16,11 +16,11 @@ except:
     pyPlanetPath = './'
 
 class Alpha:
-    def __init__(self,path=None,config=None,log=None,verbose=False,plot=False):
+    def __init__(self,path=None,config=None,log=None,verbosity=False,plot=False):
         """Reads in absorption formalisms
            Note that they are all in GHz"""
 
-        self.verbose = verbose
+        self.verbosity = verbosity
         self.plot = plot
         self.log = utils.setupLogFile(log)
         print '\n---Alpha---\n'
@@ -67,7 +67,7 @@ class Alpha:
 
         # get config
         if type(config) == str:
-            config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbose=verbose)
+            config = pcfg.planetConfig(self.planet,configFile=config,log=log,verbosity=verbosity)
         self.config = config
 
         # copy config back into otherPar
@@ -81,15 +81,15 @@ class Alpha:
         self.otherPar['h2sice'] = self.config.h2sice_p
         self.otherPar['ch4'] = self.config.ch4_p
     
-    def test(self,f=[1.,2.,3.,4.,5.],T=300.0,P=1.0,X=[0.9,0.1,0.001], D=None,otherPar=None,units='dBperkm',fignum=10,verbose=None,plot=True):
+    def test(self,f=[1.,2.,3.,4.,5.],T=300.0,P=1.0,X=[0.9,0.1,0.001], D=None,otherPar=None,units='dBperkm',fignum=10,verbosity=None,plot=True):
         """This just tests things - as well as reminds me how it works"""
-        if verbose == None:
-            verbose = self.verbose
+        if verbosity == None:
+            verbosity = self.verbosity
         if plot == None:
             plot = self.plot
         if otherPar == None:
             otherPar = {'h2state':'e', 'h2_newset':True}
-        if verbose:
+        if verbosity:
             print 'Testing alpha modules:'
             print '\tT = ',T
             print '\tP = ',P
@@ -110,10 +110,10 @@ class Alpha:
         if plot:
             plt.figure(fignum)
         for k in self.constituent:
-            if verbose:
+            if verbosity:
                 print '----------------------'+k+':  '+self.constituent[k]
             path = os.path.join(self.constituentsAreAt,k)
-            self.a.append(self.absorptionModule[k].alpha(f,T,P,X,D,otherPar,units=units,path=path,verbose=verbose))
+            self.a.append(self.absorptionModule[k].alpha(f,T,P,X,D,otherPar,units=units,path=path,verbosity=verbosity))
             if plot:
                 plt.semilogy(f,self.a[i],label=k)
             i+=1
@@ -121,13 +121,13 @@ class Alpha:
             plt.xlabel('Frequency [GHz]')
             plt.ylabel('Absorption [dB/km]')
             plt.legend()
-        if verbose:
+        if verbosity:
             print 'Done test.  See plot %d -------' % (fignum)
 
-    def getAlpha(self,freqs,T,P,gas,gas_dict,cloud,cloud_dict,units='invcm',verbose=None,plot=None):
+    def getAlpha(self,freqs,T,P,gas,gas_dict,cloud,cloud_dict,units='invcm',verbosity=None,plot=None):
         """This gets the total absoprtion coefficient from gas.  It assumes the correct frequency units, but maybe should correct that."""
-        if verbose == None:
-            verbose = self.verbose
+        if verbosity == None:
+            verbosity = self.verbosity
         absorb = []
         for k in self.constituent:
             path = os.path.join(self.constituentsAreAt,k)
@@ -137,7 +137,7 @@ class Alpha:
             else:
                 X = gas
                 D = gas_dict
-            absorb.append(self.absorptionModule[k].alpha(freqs,T,P,X,D,self.otherPar,units=units,path=path,verbose=verbose))
+            absorb.append(self.absorptionModule[k].alpha(freqs,T,P,X,D,self.otherPar,units=units,path=path,verbose=verbosity))
         absorb = np.array(absorb)
         absorb = absorb.transpose()
         totalAbsorption = np.zeros_like(freqs)

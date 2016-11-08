@@ -9,16 +9,16 @@ import raypath as ray
 import os.path
 
 class Brightness():
-    def __init__(self,log=None,verbose=False,plot=False):
+    def __init__(self,log=None,verbosity=False,plot=False):
         """This calculates the brightness temperature of the planets.
            It must be used with atmosphere and alpha"""
-        self.verbose = verbose
+        self.verbosity = verbosity
         self.plot = plot
         self.log = utils.setupLogFile(log)
         print '\n---Brightness---\n'
 
-    def layerAbsorption(self,freqs,atm,alpha,verbose=None,plot=None):
-        self.layerAlpha = self.__layerAbsorp__(freqs,atm,alpha,verbose=verbose,plot=plot)
+    def layerAbsorption(self,freqs,atm,alpha,verbosity=None,plot=None):
+        self.layerAlpha = self.__layerAbsorp__(freqs,atm,alpha,verbosity=verbosity,plot=plot)
         if plot:
             P = atm.gas[atm.config.C['P']]
             plt.figure('alpha')
@@ -35,10 +35,10 @@ class Brightness():
             #lgd=plt.legend(loc='upper left',bbox_to_anchor=(1,1))
             #lgd.set_visible(True)  # This is just to remind me...
         
-    def __layerAbsorp__(self,freqs,atm,alpha,verbose=None,plot=None):
+    def __layerAbsorp__(self,freqs,atm,alpha,verbosity=None,plot=None):
         alphaUnits = 'invcm'
-        if verbose == None:
-            verbose = self.verbose
+        if verbosity == None:
+            verbosity = self.verbosity
         if plot == None:
             plot = self.plot
         self.freqs = freqs
@@ -49,22 +49,23 @@ class Brightness():
         utils.log(self.log,'%d layers' % (numLayers),True)
         #print '\t Computing absorption in layers...'
         for layer in range(numLayers):
-            print '\r\tAbsorption in layer %d   ' % (layer+1),
+            if verbosity>2:
+                print '\r\tAbsorption in layer %d   ' % (layer+1),
             sys.stdout.flush()
-            layerAlp.append(alpha.getAlpha(freqs,T[layer],P[layer],atm.gas[:,layer],atm.config.C,atm.cloud[:,layer],atm.config.Cl,units=alphaUnits,verbose=verbose))
+            layerAlp.append(alpha.getAlpha(freqs,T[layer],P[layer],atm.gas[:,layer],atm.config.C,atm.cloud[:,layer],atm.config.Cl,units=alphaUnits,verbosity=verbosity))
         layerAlp = np.array(layerAlp).transpose()
         print ' '
         return layerAlp 
 
-    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, plot= None, verbose = None, discAverage = False, normW4plot=True):
+    def single(self, freqs, atm, b, alpha, orientation=None, taulimit=20.0, plot= None, verbosity = None, discAverage = False, normW4plot=True):
         """This computes the brightness temperature along one ray path"""
 
-        if verbose is None:
-            verbose = self.verbose
+        if verbosity is None:
+            verbosity = self.verbosity
         if plot is None:
             plot = self.plot
         # get path lengths (ds_layer) vs layer number (num_layer) - currently frequency independent refractivity
-        self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbose=verbose,plot=plot)
+        self.path = ray.compute_ds(atm,b,orientation,gtype=None,verbosity=verbosity,plot=plot)
         if self.path.ds == None:
             print 'Off planet'
             self.Tb = []
@@ -114,8 +115,8 @@ class Brightness():
                     fshifted=[[f/self.path.doppler[i]],[f/self.path.doppler[i+1]]]
                     #--debug--#self.debugDoppler.append(fshifted[0][0])
                     print '\rdoppler corrected frequency at layer',i,
-                    a1 = alpha.getAlpha(fshifted[0],T[ii1],P[ii1],atm.gas[:,ii1],atm.config.C,atm.cloud[:,ii1],atm.config.Cl,units=alphaUnits,verbose=False)
-                    a0 = alpha.getAlpha(fshifted[1],T[ii],P[ii],atm.gas[:,ii],atm.config.C,atm.cloud[:,ii],atm.config.Cl,units=alphaUnits,verbose=False)
+                    a1 = alpha.getAlpha(fshifted[0],T[ii1],P[ii1],atm.gas[:,ii1],atm.config.C,atm.cloud[:,ii1],atm.config.Cl,units=alphaUnits,verbosity=False)
+                    a0 = alpha.getAlpha(fshifted[1],T[ii],P[ii],atm.gas[:,ii],atm.config.C,atm.cloud[:,ii],atm.config.Cl,units=alphaUnits,verbosity=False)
                 dtau = (a0 + a1)*ds/2.0
                 taus.append(self.tau[i][j] + dtau)         # this is tau_(i+1)
                 T1 = atm.gas[atm.config.C['T']][ii1]
