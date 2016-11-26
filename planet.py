@@ -7,13 +7,14 @@ import atmosphere as atm
 import config as  pcfg
 import alpha
 import brightness as bright
+import data_handling
 import utils
 import datetime
 
-version = '0.5'
+version = '1.0'
 
-class planet:
-    def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbose=False, plot=True):
+class Planet:
+    def __init__(self, name, freqs=None, b=None, freqUnit='GHz', config='config.par', log='auto', verbosity=0, plot=True):
         """This is the 'executive function class to compute overall planetary emission
            Arguments here set defaults, however often get set specifically in run. See pyPlanet.pdf for documentation.
            Inputs:
@@ -34,7 +35,7 @@ class planet:
                freqUnit: unit for above
                config:  config file name [config.par], 'manual' [equivalent none]
                log:  log data from run, either a file name, a 'no', or 'auto' (for auto filename)
-               verbose:  True/False
+               verbosity:  True/False
                plot:  True/False"""
 
         if name.lower()[0:4] == 'func':
@@ -60,7 +61,7 @@ class planet:
             self.log=utils.setupLogFile(self.logFile,path='Logs/')
             utils.log(self.log,self.planet+' start '+str(runStart),True)
             self.plot = plot
-            self.verbose = verbose
+            self.verbosity = verbosity
 
             ### Some convenience values for the specific Neptune observations
             self.fvla_old = [4.86,8.46,14.94,22.46,43.34]
@@ -86,14 +87,23 @@ class planet:
             ### Get config
             if config == 'manual' or config=='none':
                 config = None
-            self.config = pcfg.planetConfig(self.planet,configFile=config,log=self.log,verbose=verbose)
+            self.config = pcfg.planetConfig(self.planet,configFile=config,log=self.log,verbosity=verbosity)
 
-            ### Create atmosphere:  outputs are self.atm.gas, self.atm.cloud and self.atm.layerProperty
-            self.atm = atm.Atmosphere(self.planet,config=self.config,log=self.log,verbose=verbose,plot=plot)
+            ### Create atmosphere:  attributes are self.atm.gas, self.atm.cloud and self.atm.layerProperty
+            self.atm = atm.Atmosphere(self.planet,config=self.config,log=self.log,verbosity=verbosity,plot=plot)
             self.atm.run()
             self.log.flush()
 
-    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], verbose=None, plot=None, outputType='frequency'):
+            ### Read in absorption modules:  to change absorption, edit files under /constituents'
+            self.alpha = alpha.Alpha(config=self.config,log=self.log,verbosity=verbosity,plot=plot)
+            #self.alpha.test(f=0,verbosity=True,plot=True)
+            self.log.flush()
+
+            ### Next compute radiometric properties - initialize bright and return data class
+            self.bright = bright.Brightness(log=self.log,verbosity=verbosity,plot=plot)
+            self.data_return = data_handling.DataReturn()
+
+    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], outputType='frequency'):
         """Runs the model to produce the brightness temperature, weighting functions etc etc
            b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)
            outputType sets whether frequency, wavelength, or both are written
@@ -122,6 +132,7 @@ class planet:
             freqUnit = self.freqUnit
         self.freqs = freqs
         self.freqUnit = freqUnit
+        self.data_return.f = self.freqs
         
         ###Set b
         if b == None:
@@ -137,46 +148,38 @@ class planet:
             self.outType = 'Spectrum'
             outputType = 'frequency'
         self.b = b
-        print 'outType = '+self.outType
+        self.data_return.b = self.b
+        if self.verbosity>2:
+            print 'outType = '+self.outType
         if self.outType == 'Image' and len(freqs) > 1:
-            print 'Image must be at only one frequency'
+            print 'Warning:  Image must be at only one frequency'
             print 'Using %f %s' % (freqs[0],self.freqUnit)
             self.freqs = list(freqs[0])
             freqs = self.freqs
 
-        ###Verbose,plot,start
-        if verbose == None:
-            verbose = self.verbose
-        if plot == None:
-            plot = self.plot
+        ###Start
         runStart = datetime.datetime.now()
-
-        if not reuse:
-            ### Read in absorption modules:  to change absorption, edit files under /constituents'
-            self.alpha = alpha.alpha(config=self.config,log=self.log,verbose=verbose,plot=plot)
-            #self.alpha.test(f=0,verbose=True,plot=True)
-            self.log.flush()
-
-            ### Next compute radiometric properties - initialize bright
-            self.bright = bright.brightness(log=self.log,verbose=verbose,plot=plot)
-            if not self.config.Doppler:
-                self.bright.layerAbsorption(freqs,self.atm,self.alpha)
-            
         self.Tb=[]
         hit_b=[]
         btmp = ''
         self.rNorm = None; self.tip = None; self.rotate = None
         if self.outType == 'Image':  ##We now treat it as an image at one frequency
-            print 'imgSize = %d x %d' % (self.imSize[0], self.imSize[1])
+            if self.verbosity > 1:
+                print 'imgSize = %d x %d' % (self.imSize[0], self.imSize[1])
             self.Tb_img = []
             imtmp = []
             if abs(block[1])>1:
                 btmp = '_%02dof%02d'%(block[0],abs(block[1]))
             else:
                 btmp = ''
+
+        if not reuse:
+            if not self.config.Doppler:
+                self.bright.layerAbsorption(freqs,self.atm,self.alpha)
             
         for i,bv in enumerate(b):
-            print '%d of %d (view [%.4f, %.4f])  ' % (i+1,len(b),bv[0],bv[1]),
+            if self.verbosity>1:
+                print '%d of %d (view [%.4f, %.4f])  ' % (i+1,len(b),bv[0],bv[1]),
             Tbt = self.bright.single(freqs,self.atm,bv,self.alpha,orientation,plot=not(self.outType=='Image'),discAverage=(self.bType=='disc'))
             if self.bright.path != None and self.rNorm == None:
                 self.rNorm = self.bright.path.rNorm
@@ -191,16 +194,19 @@ class planet:
             else:            #   ... so should always go to 'else'
                 hit_b.append(bv)
             self.Tb.append(Tbt)
+            self.data_return.Tb.append(Tbt)
             if self.outType == 'Image':
                 imtmp.append(Tbt[0])
                 if not (i+1)%self.imSize[0]:
                     self.Tb_img.append(imtmp)
                     imtmp = []
         self.log.flush()
+        self.data_return.Tb = self.Tb
 
         ###Write output files (this needs to be compatible with TBfile  -- eventually should incorporate it in there###
         datFile = 'Output/%s_%s%s_%d%02d%02d_%02d%02d.dat' % (self.planet,self.outType,btmp,runStart.year,runStart.month,runStart.day,runStart.hour,runStart.minute)
-        print '\nWriting '+self.outType+' data to ',datFile
+        if self.verbosity>2:
+            print '\nWriting '+self.outType+' data to ',datFile
         df = open(datFile,'w')
         self.__setHeader__(self.rNorm)
         self.__writeHeader__(df)
@@ -277,6 +283,7 @@ class planet:
         else:
             print 'Invalid outType:  '+self.outType
         df.close()
+        return self.data_return
             
     def __setHeader__(self,intercept):
         if not intercept:  # didn't intercept the planet

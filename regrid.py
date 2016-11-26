@@ -28,7 +28,7 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
                     where
                         'number' numbers of steps within range (int)
        Pmin/Pmax are optional for type 2/3 (defaults are min/max in gas) and not used in type 1."""
-
+    verbose = False
     #set regridType/regrid
     if regridType==None:
         regridType = atm.config.regridType
@@ -51,7 +51,8 @@ def regrid(atm,regridType=None,Pmin=None,Pmax=None):
             regrid_numsteps = int(regrid[0])
             regridType = 3
             Pgrid = np.logspace(np.log10(Pmin),np.log10(Pmax),regrid_numsteps)
-            print 'Regridding on %d steps' % (regrid_numsteps)
+            if verbose:
+                print 'Regridding on %d steps' % (regrid_numsteps)
         except ValueError:
             regrid_file = os.path.join(atm.config.path,regrid[0])
             regridType = 1

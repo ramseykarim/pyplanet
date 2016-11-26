@@ -1,13 +1,9 @@
 *.pyc
 *.out
 *.bmp
-*.for
-*.ppt
-*.pptx
 .DS_Store
 *.aux
 *.gz
 *.pyc
-Documentation/coordinateSystems.docx
 *.log
 Output/

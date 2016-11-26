@@ -3,7 +3,7 @@ import utils
 import os.path
 
 class planetConfig:
-    def __init__(self,planet,configFile='config.par',path=None,log=None,verbose=False,printHelp=False):
+    def __init__(self,planet,configFile='config.par',path=None,log=None,verbosity=False,printHelp=False):
         """reads in config file"""
         self.toks = {'gasfile':['gasFile',str], 'cloudfile':['cloudFile',str], 'gasfilehdr':['gasFileHdr',int], 'cloudfilehdr':['cloudFileHdr',int],
                      'constituents':['C',str], 'clouds':['Cl',str], 'tweakfile':['tweakFile',str], 'regridtype':['regridType',str],
@@ -14,7 +14,7 @@ class planetConfig:
                      'limb':['limb',str]}
         planet = string.capitalize(planet)
         self.planet = planet
-        self.verbose=verbose
+        self.verbosity=verbosity
         self.logFile = utils.setupLogFile(log)
         if path:
             self.path = path
@@ -24,7 +24,8 @@ class planetConfig:
         self.possibleConstituents = ['H2','HE','CH4','NH3','H2O','H2S','PH3','CO','CO13','HCN']
         self.possibleClouds = ['SOLN','H2O','NH4SH','NH3','H2S','CH4','AR','PH3']
 
-        print '\n---Setting config for %s---\n' % (planet)
+        if verbosity:
+            print '\n---Setting config for %s---\n' % (planet)
 
         #Set "universal" defaults (i.e. things not currently set but still used internally)
         self.gasType = 'read'       # "read vs compute -- normally read (currently can't compute)"

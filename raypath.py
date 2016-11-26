@@ -61,7 +61,7 @@ def __rotate2obs__(rotate,tip,b):
     out_vec = shape.rotZ(tip,shape.rotX(rotate,b))
     return out_vec
 
-def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=True):
+def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=False):
     tmp = (b[0]**2 + b[1]**2)
     try:
         zQ_Trial = np.arange(math.sqrt(1.0-tmp)*1.01,0.0,-0.005)
@@ -109,14 +109,12 @@ def __findEdge__(atm,b,rNorm,tip,rotate,gtype,printdot=True):
     del zQ_Trial, pclat_zQ_Trial, r_zQ_Trial, r_pclat_zQ_Trial, geoid, xx, yy
     return edge, b  # same vector but in P and Q coordinate systems
 
-def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
+def compute_ds(atm, b, orientation=None, gtype=None, verbosity=False, plot=True):
     """Computes the path length through the atmosphere given:
             b = impact parameter (fractional distance to outer edge at that latitude in observer's coordinates)
             orientation = position angle of the planet [0]='tip', [1]='subearth latitude' """
     if gtype==None:
         gtype = atm.config.gtype
-    if gtype == 'gravity':
-        verbose = True
     if orientation == None:
         orientation = atm.config.orientation
     path = Ray()
@@ -131,12 +129,12 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
 
     f = 1.0 - atm.config.Rpol/atm.config.Req
     tip, rotate = __computeAspect__(orientation,f)
-    print 'intersection:  (%.3f, %.3f)    ' % (b[0],b[1]),
-    print 'aspect:  (%.4f,  %.4f)' % (tip*180.0/np.pi,rotate*180.0/np.pi)
-
-    print 'Finding atmospheric edge',
+    if verbosity:
+        print 'intersection:  (%.3f, %.3f)    ' % (b[0],b[1]),
+        print 'aspect:  (%.4f,  %.4f)' % (tip*180.0/np.pi,rotate*180.0/np.pi)
+        print 'Finding atmospheric edge',
     edge, b = __findEdge__(atm,b,rNorm,tip,rotate,gtype)
-    if edge == None:
+    if edge is None:
         return path
     r1 = np.linalg.norm(edge)
     
@@ -145,8 +143,9 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     delta_lng = (180.0/math.pi)*math.atan2( np.dot(edge,xHat), np.dot(edge,zHat) )
     geoid = shape.Shape(gtype)
     r2 = geoid.calcShape(atm,rNorm,pclat,delta_lng)
-    print ' within %.2f m' % (abs(r1-r2)*100.0)
-    geoid.printShort()
+    if verbosity:
+        print ' within %.2f m' % (abs(r1-r2)*100.0)
+        geoid.printShort()
     if plot:
         plotStuff(atm=atm,r=rNorm,b=b,gtype=gtype,delta_lng=delta_lng,geoid=geoid,tip=tip,rotate=rotate)
 
@@ -173,7 +172,7 @@ def compute_ds(atm, b, orientation=None, gtype=None, verbose=False, plot=True):
     inAtmosphere = True
     direction = 'ingress'
     while inAtmosphere:
-        if verbose:
+        if verbosity:
             print '------------------'
             print '\tstep %d:  layer %d %s ' % (i,layer,direction)
             print '\ts = [%.4f, %.4f, %.4f],  ds = %.4f' % (s[-1][_X],s[-1][_Y],s[-1][_Z],ds[-1])
@@ -367,11 +366,11 @@ def layersTest(rmin=100.0,rmax=20000.0,nlyr=100):
         r = rmax - i*dr
         mid.append(r)
     return mid
-def testPath(b=0.5,rmin=12000.0,rmax=20000.0,nlyr=50,verbose=False,plot=True):
+def testPath(b=0.5,rmin=12000.0,rmax=20000.0,nlyr=50,verbosity=False,plot=True):
     #make layers
     mid = layersTest(rmin=rmin,rmax=rmax,nlyr=nlyr)
     n = refractTest(mid)
-    ds = compute_ds(b,mid,n,verbose=verbose,plot=plot)
+    ds = compute_ds(b,mid,n,verbosity=verbosity,plot=plot)
     plt.figure('ds')
     plt.plot(mid,ds)
     return mid,ds
