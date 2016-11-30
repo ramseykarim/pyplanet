@@ -9,11 +9,12 @@ import raypath as ray
 import os.path
 
 class Brightness():
-    def __init__(self,log=None,verbosity=False,plot=False):
+    def __init__(self,log=None,verbosity=False,plot=False,percentages=True):
         """This calculates the brightness temperature of the planets.
            It must be used with atmosphere and alpha"""
         self.verbosity = verbosity
         self.plot = plot
+        self.percentages = percentages
         self.log = utils.setupLogFile(log)
         print '\n---Brightness---\n'
 
@@ -49,7 +50,7 @@ class Brightness():
         utils.log(self.log,'%d layers' % (numLayers),True)
         #print '\t Computing absorption in layers...'
         for layer in range(numLayers):
-            if verbosity>2:
+            if verbosity>2 or self.percentages:
                 print '\r\tAbsorption in layer %d   ' % (layer+1),
             sys.stdout.flush()
             layerAlp.append(alpha.getAlpha(freqs,T[layer],P[layer],atm.gas[:,layer],atm.config.C,atm.cloud[:,layer],atm.config.Cl,units=alphaUnits,verbosity=verbosity))

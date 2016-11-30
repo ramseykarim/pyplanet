@@ -54,6 +54,8 @@ class Atmosphere:
         self.propGen['read'] = self.readProp
         self.propGen['compute'] = self.computeProp
 
+        self.tweak_function = lambda gas, cloud, C, Cl: "There was no tweak defined!!"
+
         print 'Planet '+self.planet
         if self.config.gasType == 'read':  # this assumes that cloudType is then also 'read'
             utils.log(self.logFile,'\tReading from: '+self.config.path,True)
@@ -63,7 +65,10 @@ class Atmosphere:
             print self.config.show()
         # print '\tIf in interactive mode, change any parameters in setpar() before run()'
 
-    def run(self,Pmin=None,Pmax=None,regridType=None,gasType=None,cloudType=None,otherType=None,tweak=True,plot=None,verbosity=None):
+    def run(self,Pmin=None,Pmax=None,regridType=None,
+            gasType=None,cloudType=None,otherType=None,
+            plot=None,verbosity=None,
+            tweak=True, tweak_fn=None):
         """This is the standard pipeline"""
         ###Set run defaults
         if Pmin == None:
@@ -100,6 +105,10 @@ class Atmosphere:
                 self.cloudGen[cloudType](verbosity=verbosity)
 
             if tweak:  # This loads and calls the module 'tweakFile'
+                if tweak_fn is None:
+                    self.tweak_function = self.obtain_tweak_module()
+                else:
+                    self.tweak_function = tweak_fn
                 self.tweakAtm()
 
             ### Compute other parameters that are needed
@@ -442,20 +451,10 @@ class Atmosphere:
             print 'Error in number of layers - check it out ('+str(nAtm)+'/'+str(self.nGas)+')'
             print 'Returned from tweakAtm'
             return 0
-        # Import tweakFile
-        sys.path.append(self.config.path)
-        try:
-            __import__(self.config.tweakFile)
-            tweakModule = sys.modules[self.config.tweakFile]
-        except SyntaxError:
-            utils.log(self.logFile,"Syntax Error:  check "+self.config.tweakFile,True)
-            return 0
-        except:
-            utils.log(self.logFile,"non-syntax tweakAtm error",True)
-            return 0
 
         # Run module then log
-        self.tweakComment, self.gas, self.cloud = tweakModule.modify(self.gas,self.cloud,self.config.C,self.config.Cl)
+        self.tweakComment, self.gas, self.cloud = self.tweak_function(self.gas, self.cloud,
+                                                                      self.config.C, self.config.Cl)
         print '---tweakComment'
         print self.tweakComment
         print '---'
@@ -469,6 +468,28 @@ class Atmosphere:
         _tp.close()
 
         return nAtm
+
+    def obtain_tweak_module(self):
+        """
+        Author: Ramsey Karim
+        Returns the modifying function
+        This function is meant to be overwritten if the tweak function
+        is to be recreated multiple times in a single instance.
+        -------
+
+        """
+        # Import tweakFile
+        sys.path.append(self.config.path)
+        try:
+            __import__(self.config.tweakFile)
+            tweakModule = sys.modules[self.config.tweakFile]
+            return tweakModule.modify
+        except SyntaxError:
+            utils.log(self.logFile,"Syntax Error:  check "+self.config.tweakFile,True)
+            raise SyntaxError
+        except:
+            utils.log(self.logFile,"non-syntax tweakAtm error",True)
+            raise RuntimeError
 
     def computeProp(self,verbosity=False):
         """This module computes derived atmospheric properties (makes self.layerProperty)"""

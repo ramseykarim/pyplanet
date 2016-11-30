@@ -10,6 +10,8 @@ import brightness as bright
 import data_handling
 import utils
 import datetime
+import os
+import copy
 
 version = '1.0'
 
@@ -284,7 +286,259 @@ class Planet:
             print 'Invalid outType:  '+self.outType
         df.close()
         return self.data_return
-            
+
+    """
+    BEGIN Ramsey's Edit (the main one)
+    """
+
+    def multi_run(self, parameter_list, default_P_cutoff=2,
+                  freqs=[1.0, 10.0, 1.0], b=[0.0, 0.0], freqUnit='GHz', orientation=None, block=[1, 1],
+                  outputType='frequency'):
+        """
+        Runs over a grid of pressure profiles in a 'brute force' attempt at fitting to a model.
+        Does this by adjusting the Tweak function between every run.
+
+        Make sure parameter_list is a list of lists!
+
+        Runs the model to produce the brightness temperature, weighting functions etc etc
+        b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)
+        outputType sets whether frequency, wavelength, or both are written
+        if outputType is 'batch', it forces the outType to be 'Spectrum' and outputType to be 'frequency'
+        """
+        runStart = datetime.datetime.now()
+        folder_path = 'Output/%s_%s_%d%02d%02d_%02d%02d' % (
+            self.planet, outputType, runStart.year,
+            runStart.month, runStart.day, runStart.hour,
+            runStart.minute
+        )
+        os.mkdir(folder_path)
+
+        original_b = copy.deepcopy(b)
+
+        print "BEGINNING ITERATIVE RUN!"
+        runtime = len(parameter_list)
+
+        for num_run, parameter in enumerate(parameter_list):
+            print "===================================="
+            print "ITERATION %d / %d\n" % (num_run+1, runtime)
+            if isinstance(parameter, list):
+                saturation_parameter = parameter[0]
+                cutoff_parameter = parameter[1]
+            else:
+                saturation_parameter = parameter
+                cutoff_parameter = default_P_cutoff
+
+            def tweak_function(gas, cloud, C, Cl):
+                comment = "Jupiter tweaking"
+                nAtm = len(gas[C['P']])
+                for i in range(nAtm):
+                    Plyr = gas[C['P']][i]
+                    Tlyr = gas[C['T']][i]
+                    #  Process H2S
+                    #  Process NH3
+                    if Plyr <= cutoff_parameter:
+                        gas[C['NH3']][i] *= saturation_parameter
+                    #  Process CO
+                    gas[C['CO']][i] = 0.0
+                    #  Process CO13
+                    gas[C['CO13']][i] = 1.0E-2 * gas[C['CO']][i]
+                    #  Process HCN, PH3
+                    gas[C['HCN']][i] = 0.0
+                    gas[C['PH3']][i] = 0.0
+                return comment, gas, cloud
+
+            self.atm.run(tweak_fn=tweak_function,
+                         plot=False, verbosity=False)
+            self.log.flush()
+
+            self.imSize = None
+            self.outType = None
+            self.bType = None
+
+            ###Set freqs
+            reuse = False
+            if freqs == None and freqUnit == None:
+                freqs = self.freqs
+                freqUnit = self.freqUnit
+            elif freqs == 'reuse':
+                freqs = self.freqs
+                reuse = True
+            else:
+                if freqUnit == None:
+                    freqUnit = 'GHz'
+                    self.freqUnit = freqUnit
+                if freqs == None:
+                    freqs = self.freqs
+                else:
+                    freqs = self.__freqRequest__(freqs, freqUnit)
+                freqUnit = self.freqUnit
+            self.freqs = freqs
+            self.freqUnit = freqUnit
+            self.data_return.f = self.freqs
+
+            ###Set b
+            b = copy.deepcopy(original_b)
+            if b == None:
+                b = self.b
+            else:
+                b = self.__bRequest__(b, block)
+            if self.outType is None or self.outType == 'Spectrum' or self.outType == 'Profile':
+                if len(b) > 5 * len(freqs):
+                    self.outType = 'Profile'
+                else:
+                    self.outType = 'Spectrum'
+            if outputType == 'batch':
+                self.outType = 'Spectrum'
+                outputType = 'frequency'
+            self.b = b
+            self.data_return.b = self.b
+            if self.verbosity > 2:
+                print 'outType = ' + self.outType
+            if self.outType == 'Image' and len(freqs) > 1:
+                print 'Warning:  Image must be at only one frequency'
+                print 'Using %f %s' % (freqs[0], self.freqUnit)
+                self.freqs = list(freqs[0])
+                freqs = self.freqs
+
+            ###Start
+            runStart = datetime.datetime.now()
+            self.Tb = []
+            hit_b = []
+            btmp = ''
+            self.rNorm = None;
+            self.tip = None;
+            self.rotate = None
+            if self.outType == 'Image':  ##We now treat it as an image at one frequency
+                if self.verbosity > 1:
+                    print 'imgSize = %d x %d' % (self.imSize[0], self.imSize[1])
+                self.Tb_img = []
+                imtmp = []
+                if abs(block[1]) > 1:
+                    btmp = '_%02dof%02d' % (block[0], abs(block[1]))
+                else:
+                    btmp = ''
+
+            if not reuse:
+                if not self.config.Doppler:
+                    self.bright.layerAbsorption(freqs, self.atm, self.alpha)
+
+            for i, bv in enumerate(b):
+                if self.verbosity > 1:
+                    print '%d of %d (view [%.4f, %.4f])  ' % (i + 1, len(b), bv[0], bv[1]),
+                Tbt = self.bright.single(freqs, self.atm, bv, self.alpha, orientation, plot=not (self.outType == 'Image'),
+                                         discAverage=(self.bType == 'disc'))
+                if self.bright.path != None and self.rNorm == None:
+                    self.rNorm = self.bright.path.rNorm
+                if self.bright.path != None and self.tip == None:
+                    self.tip = self.bright.path.tip
+                if self.bright.path != None and self.rotate == None:
+                    self.rotate = self.bright.path.rotate
+                if Tbt == None:  # I've now done away with returning None by returning T_cmb in brightness.py (at least I thought so...)
+                    Tbt = []
+                    for i in range(len(freqs)):
+                        Tbt.append(utils.T_cmb)
+                else:  # ... so should always go to 'else'
+                    hit_b.append(bv)
+                self.Tb.append(Tbt)
+                self.data_return.Tb.append(Tbt)
+                if self.outType == 'Image':
+                    imtmp.append(Tbt[0])
+                    if not (i + 1) % self.imSize[0]:
+                        self.Tb_img.append(imtmp)
+                        imtmp = []
+            self.log.flush()
+            self.data_return.Tb = self.Tb
+
+            ###Write output files (this needs to be compatible with TBfile  -- eventually should incorporate it in there###
+            datFile = folder_path + '/%s%05d.dat' % (
+                self.planet, num_run
+            )
+            # TODO MAKE THIS EASIER TO LOAD IN!!!!!!!
+            if self.verbosity > 2:
+                print '\nWriting ' + self.outType + ' data to ', datFile
+            df = open(datFile, 'w')
+            self.__setHeader__(self.rNorm)
+            self.__writeHeader__(df)
+            if self.outType == 'Image':
+                for data0 in self.Tb_img:
+                    s = ''
+                    for data1 in data0:
+                        s += '%7.2f\t' % (data1)
+                    s += '\n'
+                    df.write(s)
+            elif self.outType == 'Spectrum':
+                fp_lineoutput = open('specoutputline.dat', 'w')
+                if outputType == 'frequency':
+                    s = '# %s  K@b  \t' % (self.freqUnit)
+                elif outputType == 'wavelength':
+                    s = '# cm   K@b  \t'
+                else:
+                    s = '# %s    cm    K@b  \t' % (self.freqUnit)
+                for i, bv in enumerate(hit_b):
+                    s += '(%5.3f,%5.3f)\t' % (bv[0], bv[1])
+                s = s.strip('\t')
+                s += '\n'
+                df.write(s)
+                for i, f in enumerate(freqs):
+                    wlcm = 100.0 * utils.speedOfLight / (f * utils.Units[self.freqUnit])
+                    if outputType == 'frequency':
+                        s = '%.2f\t  ' % (f)
+                    elif outputType == 'wavelength':
+                        s = '%.4f\t  ' % (wlcm)
+                    else:
+                        s = '%.2f     %.4f \t ' % (f, wlcm)
+                    for j in range(len(hit_b)):
+                        s += '  %7.2f  \t' % (self.Tb[j][i])
+                    s = s.strip()
+                    s += '\n'
+                    fp_lineoutput.write(s)
+                    df.write(s)
+                fp_lineoutput.close()
+            elif self.outType == 'Profile':
+                if outputType == 'frequency':
+                    s = '# b  K@%s \t' % (self.freqUnit)
+                elif outputType == 'wavelength':
+                    s = '# b  K@cm  \t'
+                else:
+                    s = '# b  K@GHz,cm  \t'
+                for i, fv in enumerate(freqs):
+                    wlcm = 100.0 * utils.speedOfLight / (fv * utils.Units[self.freqUnit])
+                    if outputType == 'frequency':
+                        s += '  %9.4f   \t' % (fv)
+                    elif outputType == 'wavelength':
+                        s += '  %.4f   \t' % (wlcm)
+                    else:
+                        s += ' %.2f,%.4f\t' % (fv, wlcm)
+                s.strip('\t')
+                s += '\n'
+                df.write(s)
+                bs = []
+                for i, bv in enumerate(hit_b):
+                    s = '%5.3f %5.3f\t' % (bv[0], bv[1])
+                    bs.append(math.sqrt(bv[0] ** 2 + bv[1] ** 2))
+                    for j in range(len(freqs)):
+                        s += ' %7.2f\t ' % (self.Tb[i][j])
+                    s += '\n'
+                    df.write(s)
+                if plot:
+                    plt.figure("Profile")
+                    Tbtr = np.transpose(self.Tb)
+                    for j in range(len(freqs)):
+                        frqs = ('%.2f %s' % (self.freqs[j], self.freqUnit))
+                        plt.plot(bs, Tbtr[j], label=frqs)
+                    plt.legend()
+                    plt.xlabel('b')
+                    plt.ylabel('$T_B$ [K]')
+            else:
+                print 'Invalid outType:  ' + self.outType
+            df.close()
+            print "===================================="
+        return 0
+
+    """
+    END Ramsey's Edit
+    """
+
     def __setHeader__(self,intercept):
         if not intercept:  # didn't intercept the planet
             self.header['res'] = '# res not set\n'
