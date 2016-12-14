@@ -3,16 +3,18 @@
 # Order doesn't matter but the last one read will be in effect.  
 # Parameters not included take the hard-coded default value
 ### gas data
-gasfile jupiter.paulSolar 0
-#gasfile jupiter.paulvla72x 1
+#gasfile jupiter.paulSolar_asplund_ws 0
+#gasfile jupiter.paulSolar 0
+gasfile jupiter.paulvla72x 1
 #gasfile jupiter.paulvla2d 1
 constituents Z T P H2 HE CH4 NH3 H2O H2S SOLN OTHER PH3 CO CO13 HCN DZ
 #gasfile batch
 #gasfile modatm1.dat
 #constituents Z T P H2 He CH4 NH3 H2O H2S PH3 CO CO13 HCN
 ### cloud data
-cloudfile jupiter.paulclSolar 0
-#cloudfile jupiter.paulclvla72x 1
+#cloudfile jupiter.paulclSolar_asplund_ws 0
+#cloudfile jupiter.paulclSolar 0
+cloudfile jupiter.paulclvla72x 1
 #cloudfile jupiter.paulclvla2d 1
 clouds Z T P SOLN H2O NH4SH NH3 H2S CH4 AR PH3 DZ
 #cloudfile batch

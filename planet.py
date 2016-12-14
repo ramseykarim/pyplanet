@@ -105,11 +105,17 @@ class Planet:
             self.bright = bright.Brightness(log=self.log,verbosity=verbosity,plot=plot)
             self.data_return = data_handling.DataReturn()
 
-    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], outputType='frequency'):
+    def run(self, freqs=[1.0,10.0,1.0],b=[0.0,0.0], freqUnit='GHz', orientation=None, block=[1,1], outputType='frequency',
+            tweak_function=None):
         """Runs the model to produce the brightness temperature, weighting functions etc etc
            b = 0.04175 is a good value for Neptune images (don't remember why at the moment...)
            outputType sets whether frequency, wavelength, or both are written
            if outputType is 'batch', it forces the outType to be 'Spectrum' and outputType to be 'frequency'"""
+
+        if not tweak_function is None:
+            self.atm.run(tweak_fn=tweak_function)
+            self.log.flush()
+
 
         self.imSize = None
         self.outType = None
@@ -321,7 +327,7 @@ class Planet:
         for num_run, parameter in enumerate(parameter_list):
             print "===================================="
             print "ITERATION %d / %d\n" % (num_run+1, runtime)
-            if isinstance(parameter, list):
+            if isinstance(parameter, list) or isinstance(parameter, tuple):
                 saturation_parameter = parameter[0]
                 cutoff_parameter = parameter[1]
             else:
@@ -453,10 +459,13 @@ class Planet:
             datFile = folder_path + '/%s%05d.dat' % (
                 self.planet, num_run
             )
-            # TODO MAKE THIS EASIER TO LOAD IN!!!!!!!
             if self.verbosity > 2:
                 print '\nWriting ' + self.outType + ' data to ', datFile
             df = open(datFile, 'w')
+            df.write("# %.2f %.4f\n" % (saturation_parameter, cutoff_parameter))
+            df.write("# ITERATION %02d PARAMETERS:\n" % num_run)
+            df.write("# NH3 Saturation: %.2f pct\n" % (saturation_parameter * 100))
+            df.write("# NH3 P Cutoff (lower): %.4f bar\n" % cutoff_parameter)
             self.__setHeader__(self.rNorm)
             self.__writeHeader__(df)
             if self.outType == 'Image':
